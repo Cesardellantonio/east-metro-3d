@@ -30,6 +30,42 @@ def haversine_km(lat, lon, lat2, lon2):
 
 # ---------- Schools ----------
 
+_LEVELS = None
+
+
+def grade_levels():
+    """School level from the grades it actually enrols (latest headcount). The K-12 directory's
+    SCHOOL_EDUCATION_LEVEL field calls many secondaries 'Elementary', so it isn't trusted."""
+    global _LEVELS
+    if _LEVELS is not None:
+        return _LEVELS
+    path = EXT / "schools" / "student_headcount_by_grade_2017_18_to_2025_26.csv"
+    if not path.exists():
+        _LEVELS = {}
+        return _LEVELS
+    h = pd.read_csv(path, encoding="latin-1", dtype=str, low_memory=False)
+    h = h[(h.DATA_LEVEL == "School Level") & (h.SCHOOL_YEAR == h.SCHOOL_YEAR.max())]
+    g = h[h.GRADE.str.fullmatch(r"\d\d|KF|KH")].copy()
+    g["n"] = pd.to_numeric(g.TOTAL_STUDENTS, errors="coerce")
+    g = g[g.n.fillna(0) >= 5]
+    g["gr"] = g.GRADE.map(lambda x: 0 if x.startswith("K") else int(x))
+    out = {}
+    for school, d in g.groupby("SCHOOL_NUMBER"):
+        lo, hi = d.gr.min(), d.gr.max()
+        out[school] = "elem" if hi <= 7 else "middle" if lo >= 5 and hi <= 9 else "sec" if lo >= 8 else "k12" if lo <= 5 and hi >= 10 else "sec" if lo >= 6 else "elem"
+    _LEVELS = out
+    return out
+
+
+def level_of(mincode, name, directory_level):
+    lv = grade_levels().get(mincode)
+    if lv:
+        return lv
+    if re.search(r"secondary|senior|high school", name, re.I):
+        return "sec"
+    return {"Elementary": "elem", "Middle School": "middle"}.get(directory_level, "k12")
+
+
 def load_schools():
     k = pd.read_csv(EXT / "bc_k12_schools.csv", dtype=str, encoding="utf-8-sig")
     k = k[(k.DISTRICT_NUMBER.isin(METRO_DISTRICTS)) & (k.PUBLIC_OR_INDEPENDENT == "Public School")
@@ -37,9 +73,9 @@ def load_schools():
     k["lat"] = pd.to_numeric(k.LATITUDE, errors="coerce")
     k["lon"] = pd.to_numeric(k.LONGITUDE, errors="coerce")
     k = k[k.lat.notna() & k.lon.notna()].copy()
-    lvl = k.SCHOOL_EDUCATION_LEVEL
-    k["elem"] = lvl.isin(["Elementary", "Elementary Jr. Secondary", "Elementary-Secondary", "Middle School"])
-    k["sec"] = lvl.isin(["Secondary", "Senior Secondary", "Junior Secondary", "Elementary-Secondary"])
+    lvl = pd.Series([level_of(m, n, l) for m, n, l in zip(k.MINCODE, k.SCHOOL_NAME, k.SCHOOL_EDUCATION_LEVEL)], index=k.index)
+    k["elem"] = lvl.isin(["elem", "k12", "middle"])
+    k["sec"] = lvl.isin(["sec", "k12"])
     k["french"] = (k.HAS_EARLY_FRENCH_IMMERSION == "YES") | (k.HAS_LATE_FRENCH_IMMERSION == "YES")
 
     f = pd.read_csv(EXT / "fsa_2021_2026.csv", encoding="latin-1", dtype=str)
@@ -191,7 +227,7 @@ def load_all_schools(bbox=(-123.32, 49.12, -122.64, 49.38)):
     k = pd.read_csv(EXT / "bc_k12_schools.csv", dtype=str, encoding="utf-8-sig")
     k["lat"], k["lon"] = pd.to_numeric(k.LATITUDE, errors="coerce"), pd.to_numeric(k.LONGITUDE, errors="coerce")
     k = k[(k.FACILITY_TYPE == "Standard School") & k.lon.between(bbox[0], bbox[2]) & k.lat.between(bbox[1], bbox[3])].copy()
-    k["level"] = k.SCHOOL_EDUCATION_LEVEL.map(LEVEL).fillna("k12")
+    k["level"] = [level_of(m, n, l) for m, n, l in zip(k.MINCODE, k.SCHOOL_NAME, k.SCHOOL_EDUCATION_LEVEL)]
     k["public"] = k.PUBLIC_OR_INDEPENDENT == "Public School"
     k["french"] = (k.HAS_EARLY_FRENCH_IMMERSION == "YES") | (k.HAS_LATE_FRENCH_IMMERSION == "YES") | (k.HAS_PROG_FRANCOPHONE == "YES")
     f = pd.read_csv(EXT / "fsa_2021_2026.csv", encoding="latin-1", dtype=str)
@@ -227,6 +263,9 @@ def school_access(homes, schools):
     pub, lvl, fr = schools.public.to_numpy(), schools.level.to_numpy(), schools.french.to_numpy()
     dist_code = schools.DISTRICT_NUMBER.to_numpy()
     names = {n.lower(): i for i, n in enumerate(schools.SCHOOL_NAME)}
+    # District choice programs have no catchment: never assign them as a home's catchment school.
+    catchment_ok = ~schools.SCHOOL_NAME.str.contains(r"inquiry hub|program|learning centre|online|virtual|distance|continuing", case=False, regex=True).to_numpy()
+    cpub = pub & catchment_ok   # public schools that can be a catchment school
     out = []
     for h in homes:
         d = haversine_km(h["lat"], h["lon"], lat, lon)
@@ -239,11 +278,13 @@ def school_access(homes, schools):
         elem_i, elem_src = None, "likely"
         if h.get("es") and h.get("ec"):
             elem_i = names.get(h["es"].lower())
+            if elem_i is not None and (lvl[elem_i] not in ("elem", "k12", "middle") or not cpub[elem_i]):
+                elem_i = None
             elem_src = "listing" if elem_i is not None else "likely"
         if elem_i is None:
-            elem_i = nearest(pub & (lvl == "elem") & same) if same.any() else nearest(pub & (lvl == "elem"))
-        middle_i = nearest(pub & (lvl == "middle") & same) if district in MIDDLE_DISTRICTS else None
-        sec_i = nearest(pub & np.isin(lvl, ["sec", "k12"]) & same) if same.any() else nearest(pub & (lvl == "sec"))
+            elem_i = nearest(cpub & np.isin(lvl, ["elem", "k12"]) & same) if same.any() else nearest(cpub & (lvl == "elem"))
+        middle_i = nearest(cpub & (lvl == "middle") & same) if district in MIDDLE_DISTRICTS else None
+        sec_i = nearest(cpub & np.isin(lvl, ["sec", "k12"]) & same) if same.any() else nearest(cpub & (lvl == "sec"))
         fi_i = nearest(pub & fr & np.isin(lvl, ["elem", "k12", "middle"]) & (d <= 6))
         taken = {elem_i, middle_i, sec_i, fi_i}
         others = [int(i) for i in np.argsort(d) if int(i) not in taken and (
@@ -358,8 +399,8 @@ def top_school_routes(homes, schools, top=TOP):
     pub, lvl = schools.public.to_numpy(), schools.level.to_numpy()
     er = schools.rating.astype(float).to_numpy()
     sr = schools.sec_rating.astype(float).to_numpy() if "sec_rating" in schools else np.full(len(schools), np.nan)
-    elem_r = np.where(np.isnan(er), sr, er)
-    sec_r = np.where(np.isnan(sr), er, sr)
+    elem_r = er   # Grade 4/7 FSA: the elementary measure
+    sec_r = sr    # Grade 10/12 graduation assessments: the secondary measure
     elem_ok = np.isin(lvl, ["elem", "k12", "middle"])
     sec_ok = np.isin(lvl, ["sec", "k12"])
     out = []
