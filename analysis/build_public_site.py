@@ -15,11 +15,22 @@ DOCS = HERE.parent / "docs"
 TITLE = "East Metro 3D"
 
 
+def public_schools(W):
+    """Public and independent schools (open data), in the same shape the platform uses."""
+    from neighbourhood_scores import load_all_schools
+    out = []
+    for r in load_all_schools().itertuples():
+        out.append({"name": r.SCHOOL_NAME, "x": round((r.lon - W["lon0"]) * W["mx"], 1), "z": round(-(r.lat - W["lat0"]) * W["mz"], 1),
+                    "level": r.level, "public": bool(r.public), "rating": None if r.rating != r.rating or r.rating is None else float(r.rating),
+                    "french": bool(r.french)})
+    return out
+
+
 def main():
     DOCS.mkdir(exist_ok=True)
     twin = json.loads((TWIN / "twin_data.json").read_text())
     data = {"public": True, "homes": [], "scan": twin["latest_scan"], "world": twin["world"], "terrain": twin["terrain"],
-            "schools": twin["schools"], "stations": twin["stations"],
+            "schools": public_schools(twin["world"]), "stations": twin["stations"],
             # Unused in public mode; present so shared code paths find the keys.
             "gvr": [], "summary": [], "rents": {}, "areas": [], "nb_top": [], "nb_bottom": [], "model": {"sigma": 0},
             "sources": {"research_listings": 0, "inventory_listings": 0}}

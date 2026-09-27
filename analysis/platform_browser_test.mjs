@@ -34,7 +34,7 @@ await ev(() => document.querySelector('[data-type="House"]').click()); await sle
 await p.$eval("#f-max", e => { e.value = "800000"; e.dispatchEvent(new Event("input", { bubbles: true })); }); await sleep(600);
 const n2 = await vis(); check("max price filter", n2 < n0 && n2 > 0, `${n0} → ${n2}`);
 await p.$eval("#f-max", e => { e.value = "1200000"; e.dispatchEvent(new Event("input", { bubbles: true })); }); await sleep(600);
-for (const [id, key, get] of [["#l-bld", "city", "visible"], ["#l-sch", "schools", "visible"], ["#l-sky", "sky", "visible"], ["#l-lbl", "labels", "visible"]]) {
+for (const [id, key, get] of [["#l-bld", "city", "visible"], ["#l-sch", "schoolGroup", "visible"], ["#l-sky", "sky", "visible"], ["#l-lbl", "labels", "visible"]]) {
   await p.click(id); await sleep(100); const off = await ev(k => __twin[k].visible, key); await p.click(id); await sleep(100); const on = await ev(k => __twin[k].visible, key);
   check(`layer ${id}`, off === false && on === true);
 }

@@ -174,6 +174,14 @@ textarea { resize: vertical; min-height: 58px; }
 #mobilebar { display: none; }
 body.public .homes-only { display: none !important; }
 .school-card { display: grid; gap: 12px; }
+.slist { display: grid; gap: 2px; }
+.srow { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 7px 8px; border-radius: 10px; cursor: pointer; border: 0; background: none; text-align: left; width: 100%; font: inherit; color: inherit; }
+.srow:hover { background: var(--paper-2); }
+.srate { display: inline-grid; place-items: center; height: 26px; border-radius: 7px; font: 800 13px var(--display); color: #fff; }
+.srow b { font-size: 13.5px; display: block; line-height: 1.25; }
+.srow span.sub { font-size: 12px; color: var(--ink-2); }
+.srow .dist { font: 500 12px var(--mono); color: var(--ink-2); text-align: right; white-space: nowrap; }
+.sgroup { font: 500 11px var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin: 6px 0 2px; }
 .school-card .big { font: 800 40px/1 var(--display); }
 @media (max-width: 820px) {
   #bar { padding: 8px; gap: 8px; }
@@ -418,14 +426,23 @@ scene.add(sky);
 /* ---------- Schools ---------- */
 const ratingCol = r => r == null ? "#8a9593" : r >= 7 ? "#1f7a64" : r >= 4 ? "#9aa5a3" : "#b0485a";
 const schoolGeo = new THREE.OctahedronGeometry(26, 0); schoolGeo.scale(1, 1.4, 1);
-const schools = new THREE.InstancedMesh(schoolGeo, new THREE.MeshStandardMaterial({ roughness: .4, metalness: .1 }), DATA.schools.length);
-function placeSchools(k = 1) {  // k grows with camera distance so diamonds stay readable from the overview
+const indGeo = new THREE.BoxGeometry(30, 30, 30); indGeo.rotateY(Math.PI / 4);
+const PUB_IDX = DATA.schools.map((s, i) => s.public === false ? -1 : i).filter(i => i >= 0), IND_IDX = DATA.schools.map((s, i) => s.public === false ? i : -1).filter(i => i >= 0);
+const schools = new THREE.InstancedMesh(schoolGeo, new THREE.MeshStandardMaterial({ roughness: .4, metalness: .1 }), PUB_IDX.length);
+const schoolsInd = new THREE.InstancedMesh(indGeo, new THREE.MeshStandardMaterial({ roughness: .5, metalness: .05 }), Math.max(1, IND_IDX.length));
+if (!IND_IDX.length) schoolsInd.count = 0;
+const schoolGroup = new THREE.Group(); schoolGroup.add(schools, schoolsInd);
+const focusSchools = new Set();   // schools linked to the open home draw larger
+let schoolK = 1;
+function placeSchools(k = schoolK) { schoolK = k;  // k grows with camera distance so diamonds stay readable from the overview
   const m = new THREE.Matrix4(), c = new THREE.Color(), qq = new THREE.Quaternion(), p3 = new THREE.Vector3(), s3 = new THREE.Vector3();
-  DATA.schools.forEach((s, i) => { m.compose(p3.set(s.x, ground(s.x, s.z) + 55 * k, s.z), qq, s3.set(k, k, k)); schools.setMatrixAt(i, m); schools.setColorAt(i, c.set(ratingCol(s.rating))); });
-  schools.instanceMatrix.needsUpdate = true; if (schools.instanceColor) schools.instanceColor.needsUpdate = true;
+  for (const [mesh, idx] of [[schools, PUB_IDX], [schoolsInd, IND_IDX]]) {
+    idx.forEach((si, i) => { const s = DATA.schools[si], kk = k * (focusSchools.has(si) ? 1.6 : 1); m.compose(p3.set(s.x, ground(s.x, s.z) + 55 * kk, s.z), qq, s3.set(kk, kk, kk)); mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.set(ratingCol(s.rating))); });
+    mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }
 }
 placeSchools();
-scene.add(schools);
+scene.add(schoolGroup);
 
 /* ---------- Labels ---------- */
 function label(text, size = 1, color = "#23403c") {
@@ -477,6 +494,25 @@ function refreshBeacons() {
   for (const m of [stems, caps, rings, badges]) m.instanceMatrix.needsUpdate = true; if (caps.instanceColor) caps.instanceColor.needsUpdate = true;
 }
 
+/* ---------- School links: arcs from the open home to the schools its family could use ---------- */
+const linkGroup = new THREE.Group(); scene.add(linkGroup);
+const linkMat = { likely: new THREE.MeshBasicMaterial({ color: "#c9973d" }), fi: new THREE.MeshBasicMaterial({ color: "#2c6a93" }), other: new THREE.MeshBasicMaterial({ color: "#7b8c8f", transparent: true, opacity: .7 }) };
+function setSchoolLinks(h) {
+  for (const c of [...linkGroup.children]) { linkGroup.remove(c); c.geometry.dispose(); }
+  focusSchools.clear();
+  if (h && h.sa) {
+    const a = new THREE.Vector3(h.x, ground(h.x, h.z) + 10, h.z);
+    const entries = [...h.sa.likely.map(e => [e, "likely"]), ...(h.sa.fi ? [[h.sa.fi, "fi"]] : []), ...h.sa.other.slice(0, 5).map(e => [e, "other"])];
+    for (const [e, kind] of entries) {
+      const s = DATA.schools[e[0]]; focusSchools.add(e[0]);
+      const b = new THREE.Vector3(s.x, ground(s.x, s.z) + 10, s.z), mid = a.clone().lerp(b, .5); mid.y += 60 + a.distanceTo(b) * .18;
+      const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+      linkGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 40, kind === "likely" ? 5 : 3, 6, false), linkMat[kind]));
+    }
+  }
+  placeSchools();
+}
+
 /* ---------- Selection highlight: the actual building, lit in brass ---------- */
 const hlMat = new THREE.MeshStandardMaterial({ color: "#d9a441", roughness: .45, metalness: .25, emissive: "#8a5d12", emissiveIntensity: .6, vertexColors: true, side: THREE.DoubleSide });
 let highlight = null, priceTag = null;
@@ -506,9 +542,9 @@ const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 /* ---------- UI: rail ---------- */
 function renderRail() {
-  if (PUBLIC) { $("#legend").innerHTML = `<span class="lab" style="margin:0">Schools (diamonds)</span><span><i style="background:#1f7a64;border-radius:2px;transform:rotate(45deg)"></i>Rated 7–10 out of 10</span><span><i style="background:#9aa5a3;border-radius:2px;transform:rotate(45deg)"></i>4–7</span><span><i style="background:#b0485a;border-radius:2px;transform:rotate(45deg)"></i>Under 4</span><span><i style="background:#8a9593;border-radius:2px;transform:rotate(45deg)"></i>Not rated (secondary, or too few writers)</span><span class="lab" style="margin:8px 0 0">Walkability</span><span><i style="background:linear-gradient(90deg,#dcefeb,#0b5d55);width:60px;border-radius:3px"></i>teal glow: groceries, parks, transit within a short walk</span>`; return; }
+  if (PUBLIC) { $("#legend").innerHTML = `<span class="lab" style="margin:0">Schools (diamonds)</span><span><i style="background:#1f7a64;border-radius:2px;transform:rotate(45deg)"></i>Rated 7–10 out of 10</span><span><i style="background:#9aa5a3;border-radius:2px;transform:rotate(45deg)"></i>4–7</span><span><i style="background:#b0485a;border-radius:2px;transform:rotate(45deg)"></i>Under 4</span><span><i style="background:#8a9593;border-radius:2px;transform:rotate(45deg)"></i>Not rated (secondary, or too few writers)</span><span><i style="background:#1f7a64;border-radius:1px"></i>Squares: independent schools</span><span class="lab" style="margin:8px 0 0">Walkability</span><span><i style="background:linear-gradient(90deg,#dcefeb,#0b5d55);width:60px;border-radius:3px"></i>teal glow: groceries, parks, transit within a short walk</span>`; return; }
   $("#lenses").innerHTML = Object.entries(LENSES).map(([k, l]) => `<button data-lens="${k}" aria-pressed="${S.lens === k}">${l.name}</button>`).join("");
-  $("#legend").innerHTML = LENSES[S.lens].legend.map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join("") + `<span><i style="background:transparent;border:3px solid #22614f"></i>Ring: you turned your key</span><span><i style="background:#d9a441;border-radius:2px;transform:rotate(45deg)"></i>Gold: you both did</span><span><i style="background:#1f7a64;border-radius:2px;transform:rotate(45deg) scale(.8)"></i>Diamond: school (colour = rating)</span>`;
+  $("#legend").innerHTML = LENSES[S.lens].legend.map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join("") + `<span><i style="background:transparent;border:3px solid #22614f"></i>Ring: you turned your key</span><span><i style="background:#d9a441;border-radius:2px;transform:rotate(45deg)"></i>Gold: you both did</span><span><i style="background:#1f7a64;border-radius:2px;transform:rotate(45deg) scale(.8)"></i>Diamond: public school · square: independent (colour = rating)</span><span><i style="background:#c9973d;border-radius:2px;height:4px"></i>Arcs: the open home's schools</span>`;
   $("#types").innerHTML = ["Condo", "Townhouse", "House"].map(t => `<button class="toggle" data-type="${t}" aria-pressed="${S.house.types.includes(t)}">${typeName(t)}</button>`).join("");
   $("#f-max").value = S.house.maxPrice; $("#l-pass").checked = S.showPassed;
   const list = H.filter(visible).sort((a, b) => LENSES[S.lens].rank(b) - LENSES[S.lens].rank(a)).slice(0, 8);
@@ -535,6 +571,7 @@ function reasons(h) {
   if (h.hr) yes.push(`Hermes ranks it #${h.hr} on its shortlist.`);
   if (h.cu > 0) yes.push(`The seller already cut the price (${pct(h.cp, 1)}).`);
   if (h.er != null && h.er >= 7) yes.push(`${h.es} rates ${h.er.toFixed(1)}/10.`);
+  if (h.sa && h.sa.walk15 >= 3) yes.push(`${h.sa.walk15} public elementary schools within a 15-minute walk.`);
   if (h.w >= 85) yes.push(`Very walkable: ${h.wg || "several"} grocery stores and ${h.wp || "many"} parks within 10 minutes.`);
   if (h.skm != null && h.skm <= .8) yes.push(`${walkMin(h.skm)} min walk to ${h.stn} SkyTrain.`);
   if (h.at.SPC >= 85) yes.push(`Roomy: ${h.sq.toLocaleString()} sqft.`);
@@ -584,17 +621,36 @@ function homeCard(h) {
     <textarea id="note" aria-label="A note for us" placeholder="A note for us: loved the layout, worried about the busy street…">${esc(mine?.note || "")}</textarea>
     ${partner}${plan}
     <div class="facts">${facts.map(([ic, b, s]) => `<div class="fact">${ic}<div><b>${b}</b><span>${s}</span></div></div>`).join("")}</div>
+    ${schoolsBlock(h)}
     <div class="reasons">${r.yes.length ? `<div class="yes"><h3>Why it could work</h3><ul>${r.yes.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}${r.no.length ? `<div class="no"><h3>Watch out for</h3><ul>${r.no.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}</div>
     ${h.fh ? `<p class="tiny muted">The map has no height for this building, so the brass tower is drawn from the unit number (floor ${h.floor}), about ${h.fh} m.</p>` : h.bi < 0 ? `<p class="tiny muted">The brass block marks the listing's location. ${h.t === "House" ? "Houses are drawn flat on the map." : "This building isn't in the 3D map yet."}</p>` : ""}
     <div class="row"><a class="btn" href="${esc(h.u)}" target="_blank" rel="noopener">Photos and listing</a><button class="btn" id="orbit">Orbit</button></div>`;
 }
+const LEVEL_NAME = { elem: "Elementary", middle: "Middle school", sec: "Secondary", k12: "K–12" };
+const ROLE = { elem: "Catchment elementary", middle: "Catchment middle school", sec: "Catchment secondary" };
+function schoolRow(e, role) {
+  const s = DATA.schools[e[0]], mins = Math.max(1, Math.round(e[1] * 1000 / 80));
+  const rate = s.rating != null ? `<span class="srate" style="background:${ratingCol(s.rating)}">${s.rating.toFixed(1)}</span>` : `<span class="srate" style="background:#8a9593;font-size:11px">n/a</span>`;
+  const bits = [role, LEVEL_NAME[s.level] || "", s.public ? "" : "independent", s.french ? "French" : "", e[3] === "likely" ? "confirm with district" : e[3] === "listing" ? "per listing" : ""].filter(Boolean);
+  return `<button class="srow" data-school="${e[0]}">${rate}<span><b>${esc(s.name)}</b><span class="sub">${esc(bits.join(" · "))}</span></span><span class="dist">${e[1].toFixed(1)} km<br>${mins < 25 ? mins + " min walk" : "drive or bus"}</span></button>`;
+}
+function schoolsBlock(h) {
+  const a = h.sa; if (!a) return "";
+  const pubOther = a.other.filter(e => DATA.schools[e[0]].public), ind = a.other.filter(e => !DATA.schools[e[0]].public);
+  return `<div style="display:grid;gap:4px"><h3 style="font-size:15px">Schools for a family here</h3>
+    <p class="tiny muted">${a.walk15} public elementary school${a.walk15 === 1 ? "" : "s"} within a 15-minute walk · ${a.indep3} independent school${a.indep3 === 1 ? "" : "s"} within 3 km. Catchments follow district boundaries, so confirm the assigned school with the district before buying.</p>
+    <div class="sgroup">Where your kids would most likely go</div><div class="slist">${a.likely.map(e => schoolRow(e, ROLE[e[2]] || "")).join("")}</div>
+    ${a.fi ? `<div class="sgroup">French immersion (by application)</div><div class="slist">${schoolRow(a.fi, "Nearest immersion")}</div>` : ""}
+    ${pubOther.length ? `<div class="sgroup">Other public elementary nearby (cross-boundary request)</div><div class="slist">${pubOther.map(e => schoolRow(e, "")).join("")}</div>` : ""}
+    ${ind.length ? `<div class="sgroup">Independent schools nearby (tuition)</div><div class="slist">${ind.map(e => schoolRow(e, "")).join("")}</div><p class="tiny muted">Independent ratings use the same FSA scale as public schools. They often score high partly because they select their students.</p>` : ""}</div>`;
+}
 function planBlock(h) { const pl = planOf(h.k); return `<div style="display:grid;gap:8px" data-plan="${esc(h.k)}"><span class="lab" style="margin:0">Our next steps</span><div class="steps">${STEPS.map(([s, t]) => `<label class="step ${pl.steps?.[s] ? "done" : ""}"><input type="checkbox" data-step="${s}" ${pl.steps?.[s] ? "checked" : ""}><span>${esc(t)}</span></label>`).join("")}</div><input type="date" data-date value="${esc(pl.date || "")}" aria-label="Viewing date"></div>`; }
 function schoolCard(s) {
-  const near = PUBLIC ? [] : H.filter(h => h.es === s.name);
-  return `<div class="school-card"><div class="home-head"><div><div class="eyebrow">${s.level === "sec" ? "Secondary school" : "Elementary school"}</div><h2>${esc(s.name)}</h2></div><button class="xbtn" id="card-x" aria-label="Close">×</button></div>
+  const si = DATA.schools.indexOf(s), near = PUBLIC ? [] : H.filter(h => h.sa && h.sa.likely.some(e => e[0] === si));
+  return `<div class="school-card"><div class="home-head"><div><div class="eyebrow">${s.public === false ? "Independent · " : ""}${LEVEL_NAME[s.level] || "School"}</div><h2>${esc(s.name)}</h2></div><button class="xbtn" id="card-x" aria-label="Close">×</button></div>
     <div class="big" style="color:${ratingCol(s.rating)}">${s.rating != null ? s.rating.toFixed(1) + "/10" : "Not rated"}</div>
-    <p class="small muted">${s.level === "sec" ? "BC's Foundation Skills Assessment is written in Grades 4 and 7 only, so secondary schools aren't rated." : "Where this school's Grade 4 and 7 Foundation Skills Assessment results (2023–2026) rank among Metro Vancouver public schools. 10 means top 10%. Participation varies, so read it as a comparison, not a verdict."}${s.french ? " Offers French immersion." : ""}</p>
-    ${near.length ? `<p class="small">${near.length} of our listings use this school.</p>` : ""}</div>`;
+    <p class="small muted">${s.rating == null ? (s.level === "sec" ? "BC's Foundation Skills Assessment is written in Grades 4 and 7 only, so secondary schools aren't rated." : "No published FSA results for recent years.") : s.public === false ? "Rated on the public-school scale from its Grade 4 and 7 FSA results. Independent schools often score high partly because they select their students. Tuition applies." : "Where this school's Grade 4 and 7 Foundation Skills Assessment results (2023–2026) rank among Metro Vancouver public schools. 10 means top 10%. Participation varies, so read it as a comparison, not a verdict."}${s.french ? " Offers French immersion." : ""}</p>
+    ${near.length ? `<p class="small">Likely catchment school for ${near.length} of our listings.</p>` : ""}</div>`;
 }
 function aboutCard() {
   return `<div class="intro"><div class="eyebrow">Open data, rebuilt in 3D</div><div class="big">East Metro in 3D</div>
@@ -607,7 +663,7 @@ function renderCard() {
   const pn = el.querySelector(".pnote"), p = partnerId(); if (pn && S.sel) { const t = voteOf(p, S.sel.k); pn.textContent = t?.note ? "“" + t.note + "”" : ""; }
 }
 function select(h, fly = true) {
-  S.sel = h; S.selSchool = null; setHighlight(h); refreshBeacons(); renderCard();
+  S.sel = h; S.selSchool = null; setHighlight(h); setSchoolLinks(h); refreshBeacons(); renderCard();
   if (h && fly) flyTo(h.x, h.z, S.mode === "tour" ? 900 : 1300, .98);
   if (innerWidth <= 820) { $("#card").hidden = false; $("#rail").hidden = true; }
   frameView();
@@ -710,9 +766,10 @@ let toastT; function toast(m) { const t = $("#toast"); t.textContent = m; t.hidd
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
 function pick(ev) {
   const r = renderer.domElement.getBoundingClientRect(); mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObjects([caps, stems, badges, rings, schools, sky], false)[0]; if (!hit) return null;
+  const hit = ray.intersectObjects([caps, stems, badges, rings, schools, schoolsInd, sky], false)[0]; if (!hit) return null;
   if ([caps, stems, badges, rings].includes(hit.object)) { const h = H[hit.instanceId]; return visible(h) || S.sel === h ? { kind: "home", h, i: hit.instanceId } : null; }
-  if (hit.object === schools) return { kind: "school", s: DATA.schools[hit.instanceId] };
+  if (hit.object === schools) return { kind: "school", s: DATA.schools[PUB_IDX[hit.instanceId]] };
+  if (hit.object === schoolsInd) return { kind: "school", s: DATA.schools[IND_IDX[hit.instanceId]] };
   if (hit.object.userData.station) return { kind: "station", name: hit.object.userData.station };
   return null;
 }
@@ -731,13 +788,14 @@ renderer.domElement.addEventListener("pointerleave", () => { $("#tip").hidden = 
 document.addEventListener("click", e => {
   const mb = e.target.closest("#modes button"); if (mb) return setMode(mb.dataset.mode);
   const mg = e.target.closest("[data-mode-go]"); if (mg) return setMode(mg.dataset.modeGo);
+  const sr = e.target.closest("[data-school]"); if (sr) { const s = DATA.schools[+sr.dataset.school]; flyTo(s.x, s.z, 900, .98); toast(`${s.name}: ${s.rating != null ? s.rating.toFixed(1) + "/10" : "no FSA rating"}`); return; }
   const o = e.target.closest("[data-open]"); if (o) { setMode("explore"); return select(byKey[o.dataset.open]); }
   const v = e.target.closest("[data-vote]"); if (v) return castVote(v.dataset.vote);
   const l = e.target.closest("[data-lens]"); if (l) { S.lens = l.dataset.lens; renderRail(); return refreshBeacons(); }
   const t = e.target.closest("[data-type]"); if (t) { const ty = t.dataset.type; S.house.types = S.house.types.includes(ty) ? S.house.types.filter(x => x !== ty) : [...S.house.types, ty]; if (!S.house.types.length) S.house.types = [ty]; saveHouse(); return renderAll(); }
   const c = e.target.closest("[data-hcity]"); if (c) { const ci = c.dataset.hcity; S.house.cities = S.house.cities.includes(ci) ? S.house.cities.filter(x => x !== ci) : [...S.house.cities, ci]; saveHouse(); renderPrio(); return renderAll(); }
   const lb = e.target.closest("[data-light]"); if (lb) return applyLight(lb.dataset.light);
-  if (e.target.closest("#card-x")) { S.sel = null; S.selSchool = null; setHighlight(null); refreshBeacons(); renderCard(); if (innerWidth <= 820) $("#card").hidden = true; frameView(); return; }
+  if (e.target.closest("#card-x")) { S.sel = null; S.selSchool = null; setHighlight(null); setSchoolLinks(null); refreshBeacons(); renderCard(); if (innerWidth <= 820) $("#card").hidden = true; frameView(); return; }
   if (e.target.closest("#sheet-x")) return setMode("explore");
   if (e.target.closest("#orbit")) { orbiting = !orbiting; e.target.closest("#orbit").textContent = orbiting ? "Stop orbit" : "Orbit"; return; }
   if (e.target.closest("#compass")) { flyTo(controls.target.x, controls.target.z, camera.position.distanceTo(controls.target) * .9, .95, 0, 900); return; }
@@ -755,7 +813,7 @@ document.addEventListener("input", e => {
   if (m && e.target.value !== "" && !isNaN(+e.target.value)) { S.house[m] = +e.target.value; saveHouse(); refreshBeacons(); renderCounts(); if (e.target.id === "f-max") { clearTimeout(e.target._t); e.target._t = setTimeout(renderRail, 400); } return; }
   if (e.target.id === "h-hide") { S.house.hideRestricted = e.target.checked; saveHouse(); return renderAll(); }
   if (e.target.id === "l-pass") { S.showPassed = e.target.checked; return renderAll(); }
-  const layer = { "l-bld": () => city.visible = e.target.checked, "l-walk": () => terrUni.walkOn.value = e.target.checked ? 1 : 0, "l-sch": () => schools.visible = e.target.checked, "l-sky": () => sky.visible = e.target.checked, "l-lbl": () => labels.visible = e.target.checked }[e.target.id]; if (layer) return layer();
+  const layer = { "l-bld": () => city.visible = e.target.checked, "l-walk": () => terrUni.walkOn.value = e.target.checked ? 1 : 0, "l-sch": () => schoolGroup.visible = e.target.checked, "l-sky": () => sky.visible = e.target.checked, "l-lbl": () => labels.visible = e.target.checked }[e.target.id]; if (layer) return layer();
   const plan = e.target.closest("[data-plan]"); if (!plan) return; const k = plan.dataset.plan;
   if (e.target.dataset.step) { savePlan(k, { steps: { ...(planOf(k).steps || {}), [e.target.dataset.step]: e.target.checked } }); e.target.closest(".step").classList.toggle("done", e.target.checked); }
   if (e.target.hasAttribute("data-date")) savePlan(k, { date: e.target.value });
@@ -803,7 +861,7 @@ renderer.setAnimationLoop(now => {
 /* ---------- Start ---------- */
 applyLight("day"); renderAll(); renderCard(); setMode("explore");
 { const [x, z] = toXZ(49.25, -122.96); controls.target.set(x, ground(x, z), z); camera.position.set(x - 6000, 15500, z + 17500); }
-window.__twin = { THREE, camera, controls, renderer, S, H, caps, stems, city, schools, sky, labels, terrain, ground, select, setMode, castVote, toScreen(x, y, z) { const v = new THREE.Vector3(x, y, z).project(camera); const r = renderer.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height, v.z]; }, capY };
+window.__twin = { THREE, camera, controls, renderer, S, H, caps, stems, city, schools, schoolsInd, schoolGroup, linkGroup, sky, labels, terrain, ground, select, setMode, castVote, toScreen(x, y, z) { const v = new THREE.Vector3(x, y, z).project(camera); const r = renderer.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height, v.z]; }, capY };
 progress(1); $("#loading").hidden = true;
 
 (async function bootShared() {

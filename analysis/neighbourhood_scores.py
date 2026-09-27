@@ -178,3 +178,70 @@ def walk_scores(cur: pd.DataFrame) -> pd.DataFrame:
         detail["SkyTrain"] = {"score": round(sky * 100), "n800": int(r.station_km <= 0.8)}
         rows[idx] = {"walk": round(score / total_w * 100, 1), "walk_detail": detail}
     return pd.DataFrame.from_dict(rows, orient="index")
+
+
+# ---------- School access per home ----------
+LEVEL = {"Elementary": "elem", "Middle School": "middle", "Secondary": "sec", "Senior Secondary": "sec", "Junior Secondary": "sec",
+         "Elementary-Secondary": "k12", "Elementary Jr. Secondary": "k12"}
+MIDDLE_DISTRICTS = {"043", "040"}  # SD43 (Coquitlam, Port Moody, Port Coquitlam) and New Westminster run K-5 / 6-8 / 9-12
+
+
+def load_all_schools(bbox=(-123.32, 49.12, -122.64, 49.38)):
+    """Public and independent standard schools around the study area, each rated on the public-school FSA scale."""
+    k = pd.read_csv(EXT / "bc_k12_schools.csv", dtype=str, encoding="utf-8-sig")
+    k["lat"], k["lon"] = pd.to_numeric(k.LATITUDE, errors="coerce"), pd.to_numeric(k.LONGITUDE, errors="coerce")
+    k = k[(k.FACILITY_TYPE == "Standard School") & k.lon.between(bbox[0], bbox[2]) & k.lat.between(bbox[1], bbox[3])].copy()
+    k["level"] = k.SCHOOL_EDUCATION_LEVEL.map(LEVEL).fillna("k12")
+    k["public"] = k.PUBLIC_OR_INDEPENDENT == "Public School"
+    k["french"] = (k.HAS_EARLY_FRENCH_IMMERSION == "YES") | (k.HAS_LATE_FRENCH_IMMERSION == "YES") | (k.HAS_PROG_FRANCOPHONE == "YES")
+    f = pd.read_csv(EXT / "fsa_2021_2026.csv", encoding="latin-1", dtype=str)
+    f = f[(f.DATA_LEVEL == "School Level") & (f.SUB_POPULATION == "All Students") & f.SCHOOL_YEAR.isin(FSA_YEARS)].copy()
+    f["AVG_SCORE"] = pd.to_numeric(f.AVG_SCORE, errors="coerce")
+    f["NUMBER_WRITERS"] = pd.to_numeric(f.NUMBER_WRITERS, errors="coerce").fillna(20)
+    f = f[f.AVG_SCORE.notna()]
+    f["w"] = f.AVG_SCORE * f.NUMBER_WRITERS
+    g = f.groupby("SCHOOL_NUMBER").agg(ws=("w", "sum"), n=("NUMBER_WRITERS", "sum"))
+    k = k.join((g.ws / g.n).rename("fsa"), on="MINCODE").join(g.n.rename("writers"), on="MINCODE")
+    ref = load_schools()  # public Metro schools: the scale every rating is placed on
+    ref = ref[ref.fsa_avg.notna() & (ref.writers >= 20)].fsa_avg.to_numpy()
+    k["rating"] = k.fsa.map(lambda v: round(float((ref < v).mean() * 10), 1) if pd.notna(v) else None)
+    return k.reset_index(drop=True)
+
+
+def school_access(homes, schools):
+    """For each home: likely catchment elementary / middle / secondary, nearest French immersion, and other options.
+
+    Catchment comes from the listing when it names the school, otherwise the nearest public school of that level
+    (flagged 'likely'; districts draw catchments by boundary, not distance). Distances are straight-line.
+    """
+    lat, lon = schools.lat.to_numpy(), schools.lon.to_numpy()
+    pub, lvl, fr = schools.public.to_numpy(), schools.level.to_numpy(), schools.french.to_numpy()
+    dist_code = schools.DISTRICT_NUMBER.to_numpy()
+    names = {n.lower(): i for i, n in enumerate(schools.SCHOOL_NAME)}
+    out = []
+    for h in homes:
+        d = haversine_km(h["lat"], h["lon"], lat, lon)
+        district = CITY_DISTRICT.get(h["c"])
+
+        def nearest(mask):
+            idx = np.where(mask)[0]
+            return int(idx[np.argmin(d[idx])]) if len(idx) else None
+        same = dist_code == district if district else np.ones(len(d), bool)
+        elem_i, elem_src = None, "likely"
+        if h.get("es") and h.get("ec"):
+            elem_i = names.get(h["es"].lower())
+            elem_src = "listing" if elem_i is not None else "likely"
+        if elem_i is None:
+            elem_i = nearest(pub & (lvl == "elem") & same) if same.any() else nearest(pub & (lvl == "elem"))
+        middle_i = nearest(pub & (lvl == "middle") & same) if district in MIDDLE_DISTRICTS else None
+        sec_i = nearest(pub & np.isin(lvl, ["sec", "k12"]) & same) if same.any() else nearest(pub & (lvl == "sec"))
+        fi_i = nearest(pub & fr & np.isin(lvl, ["elem", "k12", "middle"]) & (d <= 6))
+        taken = {elem_i, middle_i, sec_i, fi_i}
+        others = [int(i) for i in np.argsort(d) if int(i) not in taken and (
+            (pub[i] and lvl[i] == "elem" and d[i] <= 2.0) or (not pub[i] and d[i] <= 3.0))][:8]
+        entry = lambda i, role, src="": None if i is None else [int(i), round(float(d[i]), 2), role, src]
+        out.append({"likely": [e for e in (entry(elem_i, "elem", elem_src), entry(middle_i, "middle", "likely"), entry(sec_i, "sec", "likely")) if e],
+                    "fi": entry(fi_i, "fi"), "other": [entry(i, "other") for i in others],
+                    "walk15": int(((d <= 1.2) & pub & (lvl == "elem")).sum()),
+                    "indep3": int(((d <= 3.0) & ~pub).sum())})
+    return out

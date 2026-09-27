@@ -14,7 +14,11 @@ import struct
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from matplotlib.path import Path as MPath
+
+from market_analysis import clean_json
+from neighbourhood_scores import load_all_schools, school_access
 
 HERE = Path(__file__).parent
 OUT = HERE / "output"
@@ -86,12 +90,25 @@ def main():
         h["fh"] = round(floor * 2.9 + 6) if floor and bi >= 0 and heights[bi] < need else 0
         h["floor"] = floor
         hit += bi >= 0
-    data = {**{k: v for k, v in tkdata.items() if k != "map"}, "world": W, "terrain": twin["terrain"], "schools": twin["schools"],
+    # Every school a family could use: public and independent, rated on the same FSA scale.
+    sch = load_all_schools()
+    access = school_access(tkdata["homes"], sch)
+    for h, acc in zip(tkdata["homes"], access):
+        h["sa"] = acc
+    schools = [{"name": r.SCHOOL_NAME, "x": round((r.lon - W["lon0"]) * W["mx"], 1), "z": round(-(r.lat - W["lat0"]) * W["mz"], 1),
+                "level": r.level, "public": bool(r.public), "rating": None if pd.isna(r.rating) else float(r.rating), "french": bool(r.french),
+                "city": r.PHYSICAL_ADDRESS_CITY} for r in sch.itertuples()]
+    data = {**{k: v for k, v in tkdata.items() if k != "map"}, "world": W, "terrain": twin["terrain"], "schools": schools,
             "stations": twin["stations"]}
-    (PLAT / "platform_data.json").write_text(json.dumps(data, separators=(",", ":"), allow_nan=False))
+    (PLAT / "platform_data.json").write_text(json.dumps(clean_json(data), separators=(",", ":"), allow_nan=False))
     for f in ["buildings.json", "ground.png", "walk.png", "terrain.png"]:
         shutil.copy2(OUT / "twin" / f, PLAT / f)
-    (PLAT / "index.html").write_text((HERE / "platform_template.html").read_text())
+    body = (HERE / "platform_template.html").read_text()
+    (PLAT / "index.html").write_text(body)  # fragment: the claude.ai artifact host adds the document shell
+    # Full document for running on this Mac (python3 -m http.server); votes save in the browser there.
+    (PLAT / "local.html").write_text('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+                                     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n'
+                                     + body + '\n</body>\n</html>\n')
     print(f"platform: {len(tkdata['homes'])} homes, {hit} matched to a 3D building ->", PLAT)
 
 
