@@ -328,3 +328,92 @@ def secondary_ratings(prof: pd.DataFrame, schools: pd.DataFrame):
         r = ref[c].dropna().to_numpy()
         pct[c] = prof[c].astype(float).map(lambda v: (r < v).mean() if pd.notna(v) and len(r) else np.nan)
     return (pct.mean(axis=1, skipna=True) * 10).round(1)
+
+
+# ---------- The price of a top school ----------
+TOP = 9.0  # rating 9+ = top 10% of Metro Vancouver public schools
+# Tuition is not published as open data: these are editable planning estimates by school type (CAD per child per year).
+TUITION = {"catholic": 7000, "faith": 14000, "independent": 22000, "prep": 36000}
+PREP = ["st. george's", "york house", "crofton house", "west point grey academy", "collingwood school", "mulgrave",
+        "st. john's school", "stratford hall", "southridge", "meadowridge", "vancouver college", "little flower academy",
+        "fraser academy", "st. patrick's regional", "bodwell", "pacific academy"]
+CATHOLIC = re.compile(r"\b(st\.?|saint|our lady|holy|sacred|immaculate|blessed|corpus christi|queen of|notre dame|catholic|assumption|guardian angels|star of the sea|good shepherd|st)\b", re.I)
+FAITH = re.compile(r"christian|baptist|adventist|sda\b|lutheran|jewish|islamic|mennonite|khalsa|hebrew|torah|talmud|faith|covenant|cedar|john knox", re.I)
+
+
+def tuition_tier(name):
+    n = name.lower()
+    if any(p in n for p in PREP):
+        return "prep"
+    if FAITH.search(name):
+        return "faith"
+    if CATHOLIC.search(name):
+        return "catholic"
+    return "independent"
+
+
+def top_school_routes(homes, schools, top=TOP):
+    """Per home: is the likely catchment top-rated, and the nearest top public / top independent options."""
+    lat, lon = schools.lat.to_numpy(), schools.lon.to_numpy()
+    pub, lvl = schools.public.to_numpy(), schools.level.to_numpy()
+    er = schools.rating.astype(float).to_numpy()
+    sr = schools.sec_rating.astype(float).to_numpy() if "sec_rating" in schools else np.full(len(schools), np.nan)
+    elem_r = np.where(np.isnan(er), sr, er)
+    sec_r = np.where(np.isnan(sr), er, sr)
+    elem_ok = np.isin(lvl, ["elem", "k12", "middle"])
+    sec_ok = np.isin(lvl, ["sec", "k12"])
+    out = []
+    for h in homes:
+        d = haversine_km(h["lat"], h["lon"], lat, lon)
+
+        def nearest(mask, maxkm):
+            idx = np.where(mask & (d <= maxkm))[0]
+            if not len(idx):
+                return None
+            i = int(idx[np.argmin(d[idx])])
+            return [i, round(float(d[i]), 2)]
+        likely = {e[2]: e for e in h["sa"]["likely"]}
+        e_i = likely.get("elem", [None])[0]
+        s_i = likely.get("sec", [None])[0]
+        out.append({
+            "e_top": bool(e_i is not None and elem_r[e_i] >= top),
+            "s_top": bool(s_i is not None and sec_r[s_i] >= top),
+            "pub_e": nearest(pub & elem_ok & (elem_r >= top), 15),
+            "pub_s": nearest(pub & sec_ok & (sec_r >= top), 20),
+            "prv_e": nearest(~pub & elem_ok & (elem_r >= top), 10),
+            "prv_s": nearest(~pub & sec_ok & (sec_r >= top), 15),
+        })
+    return out
+
+
+def catchment_premium(homes, schools):
+    """How much more homes ask per point of catchment-school rating, holding size, type, age, city and transit equal."""
+    rows = []
+    for h in homes:
+        likely = {e[2]: e for e in h["sa"]["likely"]}
+        if "elem" not in likely:
+            continue
+        r = schools.rating.iloc[likely["elem"][0]]
+        if pd.isna(r):
+            continue
+        rows.append({"lp": np.log(h["p"]), "ls": np.log(h["sq"]), "t": h["t"], "c": h["c"], "b": h.get("ba") or 2,
+                     "age": (2026 - h["y"]) if h.get("y") else np.nan, "stn": np.log(max(h.get("skm") or 1, .1)), "r": float(r),
+                     "top": float(r >= TOP)})
+    d = pd.DataFrame(rows)
+    d["age_k"] = d.age.notna().astype(float)
+    d["age"] = d.age.fillna(0) / 10
+    X = pd.get_dummies(d[["ls", "b", "age", "age_k", "stn", "t", "c"]], columns=["t", "c"], drop_first=True, dtype=float)
+    X.insert(0, "const", 1.0)
+    res = {}
+    for name, col in (("per_point", "r"), ("top10", "top")):
+        A = np.column_stack([X.to_numpy(), d[col].to_numpy()])
+        y = d.lp.to_numpy()
+        beta, *_ = np.linalg.lstsq(A, y, rcond=None)
+        resid = y - A @ beta
+        sigma2 = resid @ resid / (len(y) - A.shape[1])
+        se = np.sqrt(np.diag(sigma2 * np.linalg.pinv(A.T @ A)))[-1]
+        res[name] = {"pct": round(float((np.exp(beta[-1]) - 1) * 100), 2), "lo": round(float((np.exp(beta[-1] - 1.96 * se) - 1) * 100), 2),
+                     "hi": round(float((np.exp(beta[-1] + 1.96 * se) - 1) * 100), 2)}
+    res["n"] = int(len(d))
+    res["n_top"] = int(d.top.sum())
+    return res

@@ -279,7 +279,9 @@ const H = DATA.homes, byKey = Object.fromEntries(H.map(h => [h.k, h])), W = DATA
 /* ---------- Shared state (same store as the earlier Two Keys page, so votes carry over) ---------- */
 const ATTRS = [["VAL", "Good value"], ["SPC", "Space"], ["SCH", "Schools"], ["WLK", "Walkable"], ["LOC", "Sought-after area"], ["BLD", "Newer building"]];
 const DEFAULT_W = { VAL: 5, SPC: 3, SCH: 4, WLK: 3, LOC: 2, BLD: 3 };
-const DEFAULT_HOUSE = { down: 20, rate: 4.5, amort: 25, maxPrice: 1200000, types: ["Condo", "Townhouse", "House"], cities: [], hideRestricted: true };
+const DEFAULT_HOUSE = { down: 20, rate: 4.5, amort: 25, maxPrice: 1200000, types: ["Condo", "Townhouse", "House"], cities: [], hideRestricted: true,
+  kids: 2, yearsE: 8, yearsS: 5, tuition: { ...(DATA.tuition || { catholic: 7000, faith: 14000, independent: 22000, prep: 36000 }) } };
+const TIER_NAME = { catholic: "Catholic", faith: "faith-based", independent: "independent", prep: "university-prep" };
 const STEPS = [["viewing", "Book a viewing"], ["comps", "Ask our realtor for sold prices in this building or street (last 6 months)"], ["strata", "Read the strata minutes, depreciation report and bylaws"], ["commute", "Try the commute at rush hour"], ["school", "Visit the school and confirm the catchment"], ["mortgage", "Check the numbers with our mortgage broker"]];
 const S = { me: null, meName: "", meColor: "#a8741a", meAvatar: "", votes: {}, prefs: {}, plans: {}, house: { ...DEFAULT_HOUSE }, mode: "explore", lens: "score", sel: null, tourIdx: 0, profiles: {}, showPassed: false };
 let db = null, userCap = null, readOnly = false, shared = false;
@@ -305,6 +307,24 @@ const weightsOf = id => (S.prefs[id] && S.prefs[id].w) || null;
 function ourWeights() { const ws = [weightsOf(myId()), weightsOf(partnerId())].filter(Boolean); if (!ws.length) return DEFAULT_W; const o = {}; for (const [k] of ATTRS) o[k] = ws.reduce((a, w) => a + (w[k] ?? DEFAULT_W[k]), 0) / ws.length; return o; }
 function score(h, w = ourWeights()) { const tw = ATTRS.reduce((a, [k]) => a + w[k], 0) || 1; return Math.round(ATTRS.reduce((a, [k]) => a + w[k] * h.at[k], 0) / tw); }
 function monthly(h) { const loan = h.p * (1 - S.house.down / 100), i = Math.pow(1 + S.house.rate / 200, 1 / 6) - 1, n = S.house.amort * 12; const mort = i > 0 ? loan * i / (1 - Math.pow(1 + i, -n)) : loan / n; const freehold = h.t === "House" && !/strata/i.test(h.ten || ""); const strata = freehold ? 0 : h.st, tax = h.tx; return { total: mort + (strata || 0) + (tax || 0) / 12, partial: strata == null || tax == null, cash: h.p * S.house.down / 100 }; }
+/* The price of a top-10% school: public catchment route vs private tuition route. */
+function tuitionOf(si) { const s = DATA.schools[si]; return (S.house.tuition || {})[s.tier] ?? (DATA.tuition || {})[s.tier] ?? 20000; }
+function schoolRoute(h) {
+  const t = h.tr; if (!t) return null;
+  const likely = Object.fromEntries((h.sa?.likely || []).map(e => [e[2], e]));
+  const K = S.house.kids ?? 2, yE = S.house.yearsE ?? 8, yS = S.house.yearsS ?? 5;
+  const elem = t.e_top ? { kind: "public", si: likely.elem?.[0], km: likely.elem?.[1], cost: 0 } : t.prv_e ? { kind: "private", si: t.prv_e[0], km: t.prv_e[1], cost: tuitionOf(t.prv_e[0]) } : null;
+  const sec = t.s_top ? { kind: "public", si: likely.sec?.[0], km: likely.sec?.[1], cost: 0 } : t.prv_s ? { kind: "private", si: t.prv_s[0], km: t.prv_s[1], cost: tuitionOf(t.prv_s[0]) } : null;
+  const total = K * (yE * (elem?.cost || 0) + yS * (sec?.cost || 0)), months = Math.max(1, (yE + yS) * 12);
+  const perMonth = total / months, housing = monthly(h).total;
+  return { elem, sec, total, perMonth, housing, allIn: housing + perMonth, anyPublicTop: t.e_top || t.s_top };
+}
+// Listings more than 40% below the model are left out of route comparisons (likely data errors or special cases).
+function topPublicAlternative(h) {
+  const pools = [x => x.t === h.t && Math.abs(x.sq / h.sq - 1) <= .25, x => x.t === h.t && Math.abs(x.sq / h.sq - 1) <= .45, () => true];
+  for (const ok of pools) { const c = H.filter(x => x !== h && x.tr?.e_top && ok(x) && !x.rs && x.g > -40); if (c.length) return c.sort((a, b) => schoolRoute(a).allIn - schoolRoute(b).allIn)[0]; }
+  return null;
+}
 const inScope = h => h.p <= S.house.maxPrice && S.house.types.includes(h.t) && (!S.house.cities.length || S.house.cities.includes(h.c)) && !(S.house.hideRestricted && h.rs);
 function status(h) { const me = voteOf(myId(), h.k)?.v, p = partnerId(), th = p ? voteOf(p, h.k)?.v : null; if (me === "love" && th === "love") return "both"; if (me === "love") return "mine"; if (me === "pass") return "pass"; if (me === "maybe") return "maybe"; return "new"; }
 const visible = h => inScope(h) && (S.showPassed || status(h) !== "pass");
@@ -482,6 +502,8 @@ const LENSES = {
   school: { name: "Schools", col: h => ratingCol(h.er), legend: [["#1f7a64", "School 7+/10"], ["#9aa5a3", "4–7"], ["#b0485a", "under 4"]], rank: h => h.er ?? -1 },
   walk: { name: "Walking", col: h => WALK_STEPS.find(([t]) => (h.w ?? 0) >= t)[1], legend: WALK_STEPS.map(([t, c]) => [c, t ? `walk score ${t}+` : "under 40"]), rank: h => h.w ?? 0 },
   cost: { name: "Monthly", col: h => { const m = monthly(h).total; return m < 4200 ? "#0f6b5c" : m < 5000 ? "#2f8f79" : m < 5800 ? "#e0b458" : "#b0485a"; }, legend: [["#0f6b5c", "under $4,200/mo"], ["#2f8f79", "$4,200–5,000"], ["#e0b458", "$5,000–5,800"], ["#b0485a", "over $5,800"]], rank: h => -monthly(h).total },
+  topschool: { name: "Top school", col: h => { const r = schoolRoute(h); if (!r) return "#c9cfce"; const m = r.allIn; return h.tr.e_top ? "#1f5fa8" : m < 6000 ? "#0f6b5c" : m < 7000 ? "#2f8f79" : m < 8000 ? "#e0b458" : "#b0485a"; },
+    legend: [["#1f5fa8", "top-10% public catchment"], ["#0f6b5c", "under $6,000/mo incl. private tuition"], ["#2f8f79", "$6,000–7,000"], ["#e0b458", "$7,000–8,000"], ["#b0485a", "over $8,000"]], rank: h => -(schoolRoute(h)?.allIn ?? 1e9) },
   age: { name: "Age", col: h => h.y == null ? "#c9cfce" : h.y >= 2015 ? "#1c5cab" : h.y >= 2000 ? "#86b6ef" : h.lk ? "#e9a23b" : "#9b6a3c", legend: [["#1c5cab", "2015+"], ["#86b6ef", "2000–2014"], ["#e9a23b", "1983–99 leaky era"], ["#9b6a3c", "older"], ["#c9cfce", "unknown"]], rank: h => h.y ?? 0 },
 };
 const hidden = new THREE.Matrix4().makeScale(0, 0, 0), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), pv = new THREE.Vector3(), cc = new THREE.Color();
@@ -579,6 +601,7 @@ function reasons(h) {
   if (h.hr) yes.push(`Hermes ranks it #${h.hr} on its shortlist.`);
   if (h.cu > 0) yes.push(`The seller already cut the price (${pct(h.cp, 1)}).`);
   if (h.er != null && h.er >= 7) yes.push(`${h.es} rates ${h.er.toFixed(1)}/10.`);
+  if (h.tr?.e_top) yes.push("Top-10% public elementary in the likely catchment, so no tuition needed for a top school.");
   if (h.sa && h.sa.walk15 >= 3) yes.push(`${h.sa.walk15} public elementary schools within a 15-minute walk.`);
   if (h.w >= 85) yes.push(`Very walkable: ${h.wg || "several"} grocery stores and ${h.wp || "many"} parks within 10 minutes.`);
   if (h.skm != null && h.skm <= .8) yes.push(`${walkMin(h.skm)} min walk to ${h.stn} SkyTrain.`);
@@ -629,6 +652,7 @@ function homeCard(h) {
     <textarea id="note" aria-label="A note for us" placeholder="A note for us: loved the layout, worried about the busy street…">${esc(mine?.note || "")}</textarea>
     ${partner}${plan}
     <div class="facts">${facts.map(([ic, b, s]) => `<div class="fact">${ic}<div><b>${b}</b><span>${s}</span></div></div>`).join("")}</div>
+    ${topSchoolBlock(h)}
     ${schoolsBlock(h)}
     <div class="reasons">${r.yes.length ? `<div class="yes"><h3>Why it could work</h3><ul>${r.yes.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}${r.no.length ? `<div class="no"><h3>Watch out for</h3><ul>${r.no.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}</div>
     ${h.fh ? `<p class="tiny muted">The map has no height for this building, so the brass tower is drawn from the unit number (floor ${h.floor}), about ${h.fh} m.</p>` : h.bi < 0 ? `<p class="tiny muted">The brass block marks the listing's location. ${h.t === "House" ? "Houses are drawn flat on the map." : "This building isn't in the 3D map yet."}</p>` : ""}
@@ -641,6 +665,27 @@ function schoolRow(e, role) {
   const rate = r != null ? `<span class="srate" style="background:${ratingCol(r)}">${r.toFixed(1)}</span>` : `<span class="srate" style="background:#8a9593;font-size:11px">n/a</span>`;
   const bits = [role, LEVEL_NAME[s.level] || "", s.public ? "public" : "independent", s.grad != null ? `${Math.round(s.grad)}% graduate` : "", s.french ? "French" : "", e[3] === "likely" ? "confirm with district" : e[3] === "listing" ? "per listing" : ""].filter(Boolean);
   return `<button class="srow" data-school="${e[0]}">${rate}<span><b>${esc(s.name)}</b><span class="sub">${esc(bits.join(" · "))}</span></span><span class="dist">${e[1].toFixed(1)} km<br>${mins < 25 ? mins + " min walk" : "drive or bus"}</span></button>`;
+}
+function topSchoolBlock(h) {
+  const r = schoolRoute(h); if (!r) return "";
+  const K = S.house.kids ?? 2, yE = S.house.yearsE ?? 8, yS = S.house.yearsS ?? 5, prem = DATA.school_premium;
+  const line = (label, leg) => { if (!leg) return `<div class="small muted">${label}: no top-10% option within reach.</div>`; const sc = DATA.schools[leg.si];
+    return `<button class="srow" data-school="${leg.si}"><span class="srate" style="background:${leg.kind === "public" ? "#1f5fa8" : "#6b4a10"}">${leg.kind === "public" ? "Free" : "$" + Math.round(leg.cost / 1000) + "K"}</span><span><b>${esc(sc.name)}</b><span class="sub">${label} · ${leg.kind === "public" ? "public catchment, top 10%" : `independent (${TIER_NAME[sc.tier] || "independent"}), ~${fmt$(leg.cost)}/yr per child`} · ${(sRating(sc) ?? 0).toFixed(1)}/10</span></span><span class="dist">${leg.km != null ? leg.km.toFixed(1) + " km" : ""}</span></button>`; };
+  const likelyE = (h.sa?.likely || []).find(e => e[2] === "elem"), catchR = likelyE ? sRating(DATA.schools[likelyE[0]]) : null;
+  const alt = h.tr.e_top ? null : topPublicAlternative(h), altR = alt ? schoolRoute(alt) : null, diff = altR ? r.allIn - altR.allIn : null;
+  const premNow = !h.tr.e_top && catchR != null && prem ? h.p * prem.per_point.pct / 100 * Math.max(0, 9 - catchR) : null;
+  return `<div style="display:grid;gap:6px"><h3 style="font-size:15px">The price of a top-10% school</h3>
+    <p class="small">${h.tr.e_top ? `<b style="color:#1f5fa8">The catchment elementary is already in the top 10%.</b> No tuition needed for those years.` : `The likely catchment elementary rates ${catchR != null ? catchR.toFixed(1) : "unrated"}/10, below the top 10%. To get a top-10% school from here, you'd pay tuition:`}</p>
+    <div class="slist">${line("Elementary (K–7)", r.elem)}${line("Secondary (8–12)", r.sec)}</div>
+    <div class="sfacts">
+      <div><b class="num">${fmt$(r.allIn)}</b><span>all-in per month: home ${fmt$(r.housing)} + school ${fmt$(r.perMonth)}</span></div>
+      <div><b class="num">${fmt$(r.total)}</b><span>tuition for ${K} kid${K === 1 ? "" : "s"} over ${yE + yS} school years</span></div>
+    </div>
+    ${alt ? `<div class="partner-box" style="border-style:solid"><span class="small">Cheapest similar home with a <b>top-10% public catchment</b>: <b>${esc(alt.a)}</b> (${esc(alt.n)}), ${fmtK(alt.p)}, ${fmt$(altR.allIn)}/mo all-in.</span>
+      <b style="color:${diff > 0 ? "var(--rose)" : "var(--pine)"}">${diff > 0 ? `This home costs ${fmt$(diff)}/mo more` : `This home costs ${fmt$(-diff)}/mo less`} for the same school quality.</b>
+      <div class="row"><button class="btn" data-open="${esc(alt.k)}">Show that home</button></div></div>` : ""}
+    ${premNow ? `<p class="tiny muted">Across our listings, each extra point of catchment rating adds about ${prem.per_point.pct}% to asking prices (range ${prem.per_point.lo}–${prem.per_point.hi}%), so a top-10% catchment would add roughly ${fmt$(Math.round(premNow / 1000) * 1000)} to a home like this. That extra price usually comes back when you sell; tuition doesn't.</p>` : ""}
+    <p class="tiny muted">Tuition figures are planning estimates by school type, not quotes. Set them, and the number of kids and years, under What matters.</p></div>`;
 }
 function schoolsBlock(h) {
   const a = h.sa; if (!a) return "";
@@ -752,7 +797,28 @@ function renderPrio() {
     <div class="settings-grid"><div><label class="lab" for="h-max">Max price</label><input type="number" id="h-max" step="25000" value="${S.house.maxPrice}"></div><div><label class="lab" for="h-down">Down payment %</label><input type="number" id="h-down" value="${S.house.down}"></div><div><label class="lab" for="h-rate">Mortgage rate %</label><input type="number" id="h-rate" step="0.05" value="${S.house.rate}"></div><div><label class="lab" for="h-amort">Amortization (years)</label><input type="number" id="h-amort" value="${S.house.amort}"></div></div>
     <div><span class="lab">Cities (none = all)</span><div class="chips">${cities.map(c => `<button class="toggle" data-hcity="${esc(c)}" aria-pressed="${S.house.cities.includes(c)}">${esc(c)}</button>`).join("")}</div></div>
     <label class="check"><input type="checkbox" id="h-hide" ${S.house.hideRestricted ? "checked" : ""}> Hide leasehold, presales, age-restricted and den-as-bedroom listings</label>
-    <p class="tiny muted">The mortgage rate is a placeholder. Use your broker's quote.</p>`;
+    <p class="tiny muted">The mortgage rate is a placeholder. Use your broker's quote.</p>
+    <h3>School plan</h3>
+    <div class="settings-grid"><div><label class="lab" for="h-kids">Kids</label><input type="number" id="h-kids" min="0" max="6" value="${S.house.kids ?? 2}"></div>
+      <div><label class="lab" for="h-ye">Elementary years to cover</label><input type="number" id="h-ye" min="0" max="8" value="${S.house.yearsE ?? 8}"></div>
+      <div><label class="lab" for="h-ys">Secondary years to cover</label><input type="number" id="h-ys" min="0" max="5" value="${S.house.yearsS ?? 5}"></div></div>
+    <div class="settings-grid">${Object.keys(TIER_NAME).map(k => `<div><label class="lab" for="h-t-${k}">${TIER_NAME[k]} tuition / yr</label><input type="number" id="h-t-${k}" step="500" min="0" value="${(S.house.tuition || {})[k] ?? DATA.tuition?.[k] ?? 0}"></div>`).join("")}</div>
+    <p class="tiny muted">Tuition is estimated per child per year by school type. Check each school's actual fees; Catholic schools often charge less for parishioners and siblings.</p>`;
+}
+function topSchoolReport(inS) {
+  const prem = DATA.school_premium; if (!prem) return "";
+  const med = a => { const b = a.filter(v => v != null).sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : null; };
+  const cities = [...new Set(inS.map(h => h.c))].sort();
+  const rows = cities.map(c => { const hs = inS.filter(h => h.c === c), top = hs.filter(h => h.tr?.e_top), other = hs.filter(h => !h.tr?.e_top);
+    return `<tr><td>${esc(c)}</td><td class="num">${top.length}/${hs.length}</td><td class="num">${top.length ? fmt$(med(top.map(h => schoolRoute(h).allIn))) : "—"}</td><td class="num">${other.length ? fmt$(med(other.map(h => schoolRoute(h).allIn))) : "—"}</td></tr>`; }).join("");
+  const best = [...inS].filter(h => !h.rs && h.g > -40).sort((a, b) => schoolRoute(a).allIn - schoolRoute(b).allIn).slice(0, 5);
+  const K = S.house.kids ?? 2;
+  return `<h3>The price of a top-10% school</h3>
+    <p>There are two ways to a top-10% school: buy in a top public catchment, or buy anywhere and pay tuition. Only ${inS.filter(h => h.tr?.e_top).length} of the ${inS.length} homes in our range sit in a top-10% public elementary catchment. Across all listings, each extra point of catchment rating adds about ${prem.per_point.pct}% to the asking price (range ${prem.per_point.lo}–${prem.per_point.hi}%), so moving from a 5/10 catchment to a 9/10 one costs roughly ${Math.round(prem.per_point.pct * 4)}% more for the same home.</p>
+    <p>For ${K} kid${K === 1 ? "" : "s"}, full private tuition (K–12) costs about ${fmt$(K * Math.min(...Object.values(S.house.tuition || DATA.tuition)) / 12)}–${fmt$(K * Math.max(...Object.values(S.house.tuition || DATA.tuition)) / 12)} a month depending on the school, averaged over the school years. The catchment premium is paid once, and you usually get it back when you sell. Tuition is spent. A Catholic school near a cheaper home can beat a top catchment on monthly cost; a university-prep school rarely does.</p>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr><th style="text-align:left">City</th><th>Top-10% catchment</th><th>All-in / mo, top catchment</th><th>All-in / mo, others with tuition</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <h3>Cheapest ways to a top-10% school</h3>
+    ${best.map(h => { const r = schoolRoute(h); return `<div class="row-home"><div><b>${esc(h.a)}</b><div class="small muted">${esc(h.n)} · ${fmtK(h.p)} · ${fmt$(r.allIn)}/mo all-in · ${h.tr.e_top ? "top public catchment" : `tuition at ${esc(DATA.schools[r.elem?.si]?.name || "a top independent")}`}</div></div><button class="btn" data-open="${esc(h.k)}">Show on map</button></div>`; }).join("")}`;
 }
 function renderReport() {
   const g = (a, t) => DATA.gvr.find(x => x.area === a && x.property_type === t), gv = ["apartment", "townhouse", "detached"].map(t => [t, g("Greater Vancouver", t)]).filter(x => x[1]);
@@ -767,6 +833,7 @@ function renderReport() {
     <h3>Where you pay for the address</h3>
     <div class="bars">${areas.map(a => `<div class="bar"><span>${esc(a.area)}</span><em><i style="left:${a.premium < 0 ? 50 - Math.abs(a.premium) / span * 50 : 50}%;width:${Math.abs(a.premium) / span * 50}%;background:${a.premium < 0 ? "var(--pine)" : "var(--rose)"}"></i></em><span class="num">${pct(a.premium)}</span></div>`).join("")}</div>
     <p>For the same home, ${esc(areas[areas.length - 1].area)} costs the most and ${esc(areas[0].area)} the least. The most sought-after neighbourhoods are ${DATA.nb_top.slice(0, 3).map(n => esc(n.neighbourhood)).join(", ")}. The best value is in ${DATA.nb_bottom.slice(-3).map(n => esc(n.neighbourhood)).join(", ")}.</p>
+    ${topSchoolReport(inS)}
     <h3>Owning versus renting</h3>
     <p>A typical 3-bedroom rents for ${rents.map(([c, r]) => `${fmt$(r.median)} in ${esc(c)}`).join(", ")} a month. Owning usually costs more each month. It pays off through the principal we pay down and long-run appreciation, so plan to stay five to seven years.</p>
     ${top.length ? `<h3>Four to look at first</h3>${top.map(h => `<div class="row-home"><div><b>${esc(h.a)}</b><div class="small muted">${esc(h.n)} · ${fmtK(h.p)} · ${Math.abs(Math.round(h.g))}% below similar homes${h.er ? ` · school ${h.er.toFixed(1)}/10` : ""}</div></div><button class="btn" data-open="${esc(h.k)}">Show on map</button></div>`).join("")}` : ""}
@@ -842,7 +909,9 @@ let prioT, houseT;
 const saveHouse = () => { clearTimeout(houseT); houseT = setTimeout(() => queueWrite("settings/household", () => ({ ...S.house })), 500); };
 document.addEventListener("input", e => {
   const w = e.target.closest("[data-w]"); if (w) { const id = myId(); S.prefs[id] = { w: { ...(weightsOf(id) || DEFAULT_W), [w.dataset.w]: +w.value } }; $("#wv-" + w.dataset.w).textContent = w.value; clearTimeout(prioT); prioT = setTimeout(() => { queueWrite(`prefs/${id}`, () => ({ w: S.prefs[id].w, updated: new Date().toISOString() })); refreshBeacons(); renderRail(); renderCounts(); }, 500); return; }
-  const m = { "h-max": "maxPrice", "h-down": "down", "h-rate": "rate", "h-amort": "amort", "f-max": "maxPrice" }[e.target.id];
+  const tt = e.target.id.startsWith("h-t-") ? e.target.id.slice(4) : null;
+  if (tt && e.target.value !== "" && !isNaN(+e.target.value)) { S.house.tuition = { ...(S.house.tuition || {}), [tt]: +e.target.value }; saveHouse(); refreshBeacons(); return; }
+  const m = { "h-max": "maxPrice", "h-down": "down", "h-rate": "rate", "h-amort": "amort", "f-max": "maxPrice", "h-kids": "kids", "h-ye": "yearsE", "h-ys": "yearsS" }[e.target.id];
   if (m && e.target.value !== "" && !isNaN(+e.target.value)) { S.house[m] = +e.target.value; saveHouse(); refreshBeacons(); renderCounts(); if (e.target.id === "f-max") { clearTimeout(e.target._t); e.target._t = setTimeout(renderRail, 400); } return; }
   if (e.target.id === "h-hide") { S.house.hideRestricted = e.target.checked; saveHouse(); return renderAll(); }
   if (e.target.id === "l-pass") { S.showPassed = e.target.checked; return renderAll(); }

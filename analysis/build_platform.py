@@ -18,7 +18,7 @@ import pandas as pd
 from matplotlib.path import Path as MPath
 
 from market_analysis import clean_json
-from neighbourhood_scores import load_all_schools, school_access
+from neighbourhood_scores import TOP, TUITION, catchment_premium, load_all_schools, school_access, top_school_routes, tuition_tier
 
 HERE = Path(__file__).parent
 OUT = HERE / "output"
@@ -104,13 +104,19 @@ def main():
     access = school_access(tkdata["homes"], sch)
     for h, acc in zip(tkdata["homes"], access):
         h["sa"] = acc
+    # The price of a top school: public-catchment route vs private-tuition route.
+    for h, r in zip(tkdata["homes"], top_school_routes(tkdata["homes"], sch)):
+        h["tr"] = r
+    premium = catchment_premium(tkdata["homes"], sch)
+    print("catchment premium:", premium)
     schools = [{"name": r.SCHOOL_NAME, "x": round((r.lon - W["lon0"]) * W["mx"], 1), "z": round(-(r.lat - W["lat0"]) * W["mz"], 1),
                 "level": r.level, "public": bool(r.public), "rating": None if pd.isna(r.rating) else float(r.rating), "french": bool(r.french), "sec_rating": _f(r, "sec_rating"), "enrol": _f(r, "enrol"), "ell": _f(r, "ell_pct"), "class": _f(r, "class_size"),
                 "grad": _f(r, "grad_rate"), "hon": _f(r, "honours_rate"), "nump": _f(r, "num_prof"), "litp": _f(r, "lit_prof"),
                 "dist_comp": _f(r, "district_completion") if r.public else None, "meet": _f(r, "fsa_meet"),
+                "tier": None if r.public else tuition_tier(r.SCHOOL_NAME),
                 "city": r.PHYSICAL_ADDRESS_CITY} for r in sch.itertuples()]
     data = {**{k: v for k, v in tkdata.items() if k != "map"}, "world": W, "terrain": twin["terrain"], "schools": schools,
-            "stations": twin["stations"]}
+            "stations": twin["stations"], "school_premium": premium, "tuition": TUITION, "top_threshold": TOP}
     (PLAT / "platform_data.json").write_text(json.dumps(clean_json(data), separators=(",", ":"), allow_nan=False))
     for f in ["buildings.json", "ground.png", "walk.png", "terrain.png"]:
         shutil.copy2(OUT / "twin" / f, PLAT / f)
