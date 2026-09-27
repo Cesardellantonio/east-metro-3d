@@ -1,0 +1,1320 @@
+<title>East Metro Home Scan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --house: #4a3aa7;
+  --paper: #f4f6f5;
+  --panel: #ffffff;
+  --ink: #142120;
+  --ink-2: #4c5b59;
+  --ink-3: #75817f;
+  --line: #d8dfdd;
+  --line-2: #e8edeb;
+  --accent: #0e6a62;
+  --accent-soft: #dcefeb;
+  --below: #0e7c70;
+  --above: #c2413b;
+  --mid: #eceeed;
+  --condo: #2a78d6;
+  --town: #eb6834;
+  --warn-bg: #fdf1d8;
+  --warn-ink: #7a4b00;
+  --good-bg: #dff3e6;
+  --good-ink: #17603a;
+  --shadow: 0 1px 2px rgba(20, 33, 32, .06), 0 4px 16px rgba(20, 33, 32, .05);
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "Public Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark; --house: #9085e9;
+    --paper: #121817; --panel: #1a2120; --ink: #eef3f2; --ink-2: #b3bfbd; --ink-3: #8a9795;
+    --line: #2f3a38; --line-2: #243030; --accent: #5cc4b7; --accent-soft: #1d3633;
+    --below: #4fc0b2; --above: #ec7b74; --mid: #2a3231; --condo: #3987e5; --town: #d95926;
+    --warn-bg: #3a2e14; --warn-ink: #f2c46b; --good-bg: #173325; --good-ink: #7fd6a2;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark; --house: #9085e9;
+  --paper: #121817; --panel: #1a2120; --ink: #eef3f2; --ink-2: #b3bfbd; --ink-3: #8a9795;
+  --line: #2f3a38; --line-2: #243030; --accent: #5cc4b7; --accent-soft: #1d3633;
+  --below: #4fc0b2; --above: #ec7b74; --mid: #2a3231; --condo: #3987e5; --town: #d95926;
+  --warn-bg: #3a2e14; --warn-ink: #f2c46b; --good-bg: #173325; --good-ink: #7fd6a2;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(34px, 6vw, 58px); font-weight: 800; font-stretch: 78%; letter-spacing: -.01em; line-height: .98; }
+h2 { font-size: 28px; font-weight: 750; font-stretch: 85%; line-height: 1.1; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+.num, td.n, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--ink-2); }
+.small { font-size: 13px; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.hero { padding-top: 40px; display: grid; gap: 18px; border-bottom: 1px solid var(--line); padding-bottom: 32px; }
+.hero .lede { font-size: 18px; color: var(--ink-2); max-width: 62ch; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.fact { background: var(--panel); padding: 16px 18px; display: grid; gap: 4px; align-content: start; }
+.fact .v { font-family: var(--display); font-size: 32px; font-weight: 750; font-stretch: 85%; line-height: 1; }
+.fact .l { font-size: 13px; color: var(--ink-2); }
+
+section { display: grid; gap: 20px; }
+.sec-head { display: grid; gap: 8px; }
+.findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.finding { border-top: 3px solid var(--accent); padding-top: 12px; display: grid; gap: 6px; }
+.finding b { font-family: var(--display); font-size: 17px; font-stretch: 90%; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; gap: 10px 20px; justify-content: space-between; align-items: baseline; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+th.n, td.n { text-align: right; }
+tr.group td { font-family: var(--display); font-weight: 700; font-stretch: 90%; padding-top: 14px; color: var(--ink-2); border-bottom: 0; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: 500 13px var(--body); padding: 6px 12px; background: var(--panel); color: var(--ink-2); border: 0; border-right: 1px solid var(--line); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--panel); }
+
+.dbar { position: relative; width: 120px; height: 14px; }
+.dbar .axis { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--ink-3); }
+.dbar .fill { position: absolute; top: 3px; height: 8px; border-radius: 2px; }
+.dbar-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+
+.chart-wrap { position: relative; }
+svg text { fill: var(--ink-3); font-family: var(--mono); font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); align-items: center; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend i.ring { background: transparent; border: 2px solid var(--ink); }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); padding: 8px 10px; border-radius: 8px; font-size: 12.5px; line-height: 1.4; max-width: 260px; z-index: 5; box-shadow: var(--shadow); }
+.tip .mono { color: var(--paper); }
+
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 16px; align-items: end; }
+.ctl { display: grid; gap: 5px; font-size: 12px; color: var(--ink-2); }
+.ctl label, .ctl .lab { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.ctl input[type=number], .ctl select { font: 500 14px var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; width: 100%; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13.5px; color: var(--ink); cursor: pointer; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn { font: 500 13px var(--body); padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
+.chip-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.afford { border-top: 1px dashed var(--line); padding-top: 12px; }
+
+#list tbody tr.row { cursor: pointer; }
+#list tbody tr.row:hover { background: var(--line-2); }
+#list tbody tr.row.open { background: var(--accent-soft); }
+.addr { font-weight: 600; }
+.sub { font-size: 12.5px; color: var(--ink-3); }
+.type-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; margin: 1px 2px 1px 0; }
+.pill.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.pill.good { background: var(--good-bg); color: var(--good-ink); }
+.pill.plain { background: var(--mid); color: var(--ink-2); }
+.gap-v { font-family: var(--mono); font-weight: 500; min-width: 52px; text-align: right; }
+.detail td { background: var(--panel); padding: 16px 12px 20px; border-bottom: 2px solid var(--accent); }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 28px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 13.5px; }
+.kv dt { color: var(--ink-3); }
+.kv dd { margin: 0; }
+.btn { display: inline-block; font: 600 13px var(--body); padding: 8px 14px; border-radius: 8px; background: var(--accent); color: var(--panel); text-decoration: none; }
+.count { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px 32px; }
+.notes div { display: grid; gap: 6px; }
+.empty { padding: 28px; text-align: center; color: var(--ink-2); }
+:root { --water: #cfe0e6; --land: #f4f3ee; --park: #d5e8cf; --road: #ffffff; --road-major: #f2d7a6; --road-edge: #d9d6cc; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --water: #0e1f26; --land: #1c2322; --park: #1f3324; --road: #37403e; --road-major: #5a4a2c; --road-edge: #2a3231; } }
+:root[data-theme="dark"] { --water: #0e1f26; --land: #1c2322; --park: #1f3324; --road: #37403e; --road-major: #5a4a2c; --road-edge: #2a3231; }
+:root { --s1: #1baf7a; --s2: #eda100; --s3: #e87ba4; --s4: #008300; --s5: #4a3aa7; --ref: #8a9593; --rail: #b9c3c1; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --s1: #199e70; --s2: #c98500; --s3: #d55181; --s4: #008300; --s5: #9085e9; --ref: #7d8987; --rail: #46524f; } }
+:root[data-theme="dark"] { --s1: #199e70; --s2: #c98500; --s3: #d55181; --s4: #008300; --s5: #9085e9; --ref: #7d8987; --rail: #46524f; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 20px; }
+svg .lbl { font-family: var(--body); font-size: 12px; font-weight: 600; fill: var(--ink-2); }
+svg .city { font-family: var(--display); font-size: 13px; font-weight: 700; fill: var(--ink-3); letter-spacing: .06em; text-transform: uppercase; }
+svg .stn { font-family: var(--mono); font-size: 10px; fill: var(--ink-3); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; align-content: start; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.card:hover { border-color: var(--accent); }
+.card .top { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+.card .rank { font-family: var(--display); font-weight: 800; font-stretch: 80%; font-size: 26px; line-height: 1; color: var(--accent); }
+.card .price { font-family: var(--display); font-size: 26px; font-weight: 750; font-stretch: 85%; line-height: 1; }
+.card .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; border-top: 1px solid var(--line-2); padding-top: 10px; }
+.card .stats div { display: grid; gap: 1px; }
+.card .stats b { font-family: var(--mono); font-weight: 500; font-size: 13.5px; }
+.card .stats span { font-size: 11px; color: var(--ink-3); }
+.vsbar { position: relative; height: 26px; }
+.vsbar .track { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 2px; background: var(--mid); }
+.vsbar .span { position: absolute; top: 11px; height: 4px; background: var(--below); border-radius: 2px; }
+.vsbar .ask, .vsbar .fair { position: absolute; top: 5px; width: 3px; height: 16px; border-radius: 2px; transform: translateX(-1.5px); }
+.vsbar .ask { background: var(--below); }
+.vsbar .fair { background: var(--ink); }
+.vs-legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); }
+.stack { display: flex; height: 22px; border-radius: 4px; overflow: hidden; gap: 2px; background: var(--panel); }
+.stack div { display: flex; align-items: center; padding-inline: 6px; font-size: 11px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; }
+.stack-key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--ink-2); }
+.stack-key i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+details.more summary { cursor: pointer; font-size: 13px; color: var(--accent); font-weight: 600; }
+details.more[open] summary { margin-bottom: 10px; }
+.futs { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 18px 14px; justify-items: center; }
+.fut { --fut-bg: linear-gradient(160deg, #f3d2b0, #c98a52 45%, #9b5f2e 75%, #e2b183); --fut-ink: #3a1f0a;
+  position: relative; width: 100%; max-width: 210px; aspect-ratio: 0.68; border: 0; padding: 20px 14px 26px; font: inherit; text-align: left;
+  color: var(--fut-ink); background: var(--fut-bg); cursor: pointer; display: grid; grid-template-rows: auto auto 1fr auto; gap: 6px;
+  clip-path: polygon(50% 0, 86% 2.5%, 100% 9%, 100% 86%, 50% 100%, 0 86%, 0 9%, 14% 2.5%); transition: transform .15s ease; }
+.fut::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(115deg, rgba(255,255,255,.16) 0 2px, transparent 2px 14px); mix-blend-mode: soft-light; }
+.fut:hover, .fut:focus-visible { transform: translateY(-3px); }
+.fut.gold { --fut-bg: linear-gradient(160deg, #fff4bd 0%, #ecc95c 32%, #c7952b 68%, #f3da80 100%); --fut-ink: #3b2a06; }
+.fut.silver { --fut-bg: linear-gradient(160deg, #fbfcfd, #cfd6db 42%, #9ba7ae 74%, #e6ebee); --fut-ink: #1d282e; }
+.fut.special { --fut-bg: radial-gradient(120% 70% at 50% 18%, #1d7f73 0%, #0b2b28 55%, #06110f 100%); --fut-ink: #86f5e2; }
+.fut .ribbon { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); font: 800 9px/1 var(--display); letter-spacing: .14em; white-space: nowrap; opacity: .9; }
+.fut .head { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: start; }
+.fut .ovr { font: 800 42px/0.9 var(--display); font-stretch: 80%; }
+.fut .pos { font: 800 14px/1.1 var(--display); letter-spacing: .04em; }
+.fut .club { display: inline-block; margin-top: 4px; font: 700 10px/1 var(--mono); padding: 3px 5px; border: 1.5px solid currentColor; border-radius: 4px; opacity: .85; }
+.fut .icon { justify-self: end; width: 72%; max-width: 96px; opacity: .85; }
+.fut .name { font: 800 13.5px/1.15 var(--display); font-stretch: 82%; text-transform: uppercase; text-align: center; padding-block: 5px; border-block: 1px solid color-mix(in srgb, currentColor 35%, transparent); overflow-wrap: anywhere; }
+.fut .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; align-content: center; padding-inline: 4px; }
+.fut .stats span { display: flex; gap: 6px; align-items: baseline; font: 600 12px var(--display); letter-spacing: .04em; }
+.fut .stats b { font: 800 17px/1 var(--display); min-width: 22px; }
+.fut .foot { text-align: center; font: 700 12px var(--mono); opacity: .85; }
+.weights { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px; }
+.weights label { display: grid; gap: 2px; font: 500 12px var(--mono); color: var(--ink-2); letter-spacing: .04em; }
+.weights input { accent-color: var(--accent); width: 100%; }
+.ovr-pill { display: inline-grid; place-items: center; min-width: 36px; height: 26px; border-radius: 6px; font: 800 15px var(--display); font-stretch: 85%; color: #2a1d05; }
+.more-btn { justify-self: center; font: 600 14px var(--body); padding: 9px 18px; border-radius: 8px; border: 1px solid var(--accent); background: var(--panel); color: var(--accent); cursor: pointer; }
+.walkbars { display: grid; gap: 4px; font-size: 12.5px; }
+.walkbars div { display: grid; grid-template-columns: 130px 1fr 34px; gap: 8px; align-items: center; }
+.walkbars i { display: block; height: 7px; border-radius: 4px; background: var(--accent); }
+.walkbars em { display: block; height: 7px; border-radius: 4px; background: var(--mid); }
+.card-detail { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; grid-column: 1 / -1; }
+.card-detail .fut { width: 190px; flex: none; }
+.map-controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; }
+.map-controls .ctl { min-width: 200px; }
+.map-layers { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.map-body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; }
+.map-canvas-wrap { position: relative; height: 580px; border-radius: 10px; overflow: hidden; background: var(--water); touch-action: none; cursor: grab; }
+.map-canvas-wrap.dragging { cursor: grabbing; }
+.map-canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+.map-zoom { position: absolute; top: 10px; right: 10px; display: grid; gap: 4px; }
+.map-zoom button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 700 18px var(--body); cursor: pointer; box-shadow: var(--shadow); }
+.map-attr { position: absolute; left: 8px; bottom: 6px; font-size: 10.5px; color: var(--ink-3); background: color-mix(in srgb, var(--panel) 75%, transparent); padding: 2px 6px; border-radius: 4px; }
+.map-info { border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; align-content: start; max-height: 580px; overflow-y: auto; }
+.map-info .fut { width: 180px; justify-self: center; }
+.lg-ramp { display: inline-block; width: 90px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+.lg-sq { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; border: 1.5px solid var(--ink); }
+@media (max-width: 860px) { .map-body { grid-template-columns: 1fr; } .map-canvas-wrap { height: 460px; } .map-info { max-height: none; } }
+@media (max-width: 640px) {
+  .hide-sm { display: none; }
+  h2 { font-size: 24px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .detail td { animation: drop .18s ease-out; }
+  @keyframes drop { from { opacity: .4; } to { opacity: 1; } }
+}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow" id="scanline">Scan of Sep 19, 2026</div>
+    <h1>East Metro Home Scan</h1>
+    <p class="lede">3-bedroom condos and townhouses, plus detached houses and duplexes with 3+ bedrooms, up to $1.5M, from Hermes's research and inventory across Vancouver, Burnaby, Port Moody, Coquitlam, New Westminster and Port Coquitlam. Each one is checked against the regional benchmark prices and a fair-value model, then ranked for a family move.</p>
+    <div class="facts" id="facts"></div>
+    <div><a class="btn" href="https://claude.ai/artifact/567xxnPKoSuPcaxF79Czvy" target="_blank" rel="noopener">Explore the 3D city model</a></div>
+  </header>
+
+  <section id="map-sec">
+    <div class="sec-head">
+      <div class="eyebrow">1 · Map</div>
+      <h2>Every home, school and walkable street on one map</h2>
+      <p class="muted">Drag to pan, and scroll or pinch to zoom. Colour the homes by what matters most, turn on the school and walkability layers, and tap any home or school for its details. The map follows the shortlist filters further down.</p>
+    </div>
+    <div class="panel map-panel">
+      <div class="map-controls">
+        <div class="ctl"><label for="m-color">Colour homes by</label><select id="m-color"><option value="ovr">Overall rating</option><option value="gap">Price vs model value</option><option value="school">School rating</option><option value="walk">Walk score</option><option value="type">Condo or townhouse</option></select></div>
+        <div class="map-layers" role="group" aria-label="Map layers">
+          <label class="check"><input type="checkbox" id="l-walk" checked> Walkability heat</label>
+          <label class="check"><input type="checkbox" id="l-elem" checked> Elementary schools</label>
+          <label class="check"><input type="checkbox" id="l-sec"> Secondary schools</label>
+          <label class="check"><input type="checkbox" id="l-park" checked> Parks</label>
+          <label class="check"><input type="checkbox" id="l-sky" checked> SkyTrain</label>
+        </div>
+      </div>
+      <div class="legend" id="map-legend"></div>
+      <div class="map-body">
+        <div class="map-canvas-wrap" id="mapc-wrap">
+          <canvas id="mapc" aria-label="Interactive map of listings, schools and walkability" role="img"></canvas>
+          <div class="map-zoom"><button type="button" id="z-in" aria-label="Zoom in">+</button><button type="button" id="z-out" aria-label="Zoom out">−</button><button type="button" id="z-fit" aria-label="Show all homes">⤢</button></div>
+          <div class="tip" hidden></div>
+          <div class="map-attr">© OpenStreetMap contributors · ParcelMap BC · BC Data Catalogue</div>
+        </div>
+        <aside class="map-info" id="map-info"><p class="small muted">Tap a home or a school on the map to see its details here.</p></aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="market">
+    <div class="sec-head">
+      <div class="eyebrow">2 · The market</div>
+      <h2>Prices are down across the board, and buyers have room to negotiate</h2>
+      <p class="muted">Benchmark prices from the Greater Vancouver Realtors monthly stats package (MLS® Home Price Index). A benchmark is the price of a typical home in that area, so it shows the trend better than an average of whatever happened to sell.</p>
+    </div>
+    <div class="findings" id="findings"></div>
+    <div class="panel">
+      <div class="panel-head">
+        <h3 id="path-title">Benchmark price over 10 years</h3>
+        <div class="seg" role="group" aria-label="Property type" id="gvr-type"></div>
+      </div>
+      <div class="legend" id="path-legend"></div>
+      <div class="chart-wrap" id="path-wrap"><svg id="path" role="img" aria-label="Benchmark price 10, 5, 3 and 1 year ago and today, by area"></svg><div class="tip" hidden></div></div>
+      <p class="small muted">The report gives each benchmark's change over 1 month and 1, 3, 5 and 10 years, so the line joins those points and is straight in between. Hover to see each area's price at each point.</p>
+      <details class="more"><summary>Show the full benchmark table</summary>
+        <div class="scroll"><table id="gvr"></table></div>
+        <p class="small muted" id="gvr-note"></p>
+      </details>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <div class="panel-head"><h3>1-year change by area</h3><span class="small muted" id="bars-sub"></span></div>
+        <div class="chart-wrap" id="bars-wrap"><svg id="bars" role="img" aria-label="One-year benchmark change by area"></svg><div class="tip" hidden></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>What 3-bed listings ask per sqft</h3><span class="small muted">One dot per listing · bar = median</span></div>
+        <div class="chart-wrap" id="strip-wrap"><svg id="strip" role="img" aria-label="Asking price per square foot for each listing, by city and type"></svg><div class="tip" hidden></div></div>
+        <details class="more"><summary>Show medians as a table</summary><div class="scroll"><table id="asks"></table></div></details>
+      </div>
+    </div>
+  </section>
+
+  <section id="value">
+    <div class="sec-head">
+      <div class="eyebrow">3 · Fair value</div>
+      <h2>Which listings ask less than similar homes nearby</h2>
+      <p class="muted">The model estimates each home's price from its size, bathrooms, age, parking, type (condo or townhouse), tenure, city, neighbourhood and walking distance to SkyTrain. Each home is valued without its own price in the data, so a listing can't pull its own estimate toward itself. Ringed dots ask at least 10% below that estimate.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Asking price against size</h3>
+        <div class="legend">
+          <span><i style="background:var(--condo)"></i>Condo</span>
+          <span><i style="background:var(--house)"></i>House / duplex</span>
+          <span><i style="background:var(--town)"></i>Townhouse</span>
+          <span><i class="ring"></i>Asks 10%+ below model value</span>
+          <span><i style="background:var(--line)"></i>Hidden by the filters below</span>
+        </div>
+      </div>
+      <div class="chart-wrap" id="scatter-wrap"><svg id="scatter" role="img" aria-label="Asking price against floor area for each active listing"></svg><div class="tip" hidden></div></div>
+    </div>
+  </section>
+
+  <section id="place">
+    <div class="sec-head">
+      <div class="eyebrow">4 · Location, age and finish</div>
+      <h2>What you pay for location, building age and finish</h2>
+      <p class="muted">Each chart compares homes of the same size, type and tenure, so the differences come from location, age or finish and not from size.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>How premium is each neighbourhood?</h3>
+        <div class="seg" role="group" aria-label="City" id="loc-city"></div>
+      </div>
+      <div class="facts" id="loc-cities"></div>
+      <div class="legend"><span><i style="background:var(--above)"></i>Asks more than similar homes elsewhere</span><span><i style="background:var(--below)"></i>Asks less</span><span class="small muted">Neighbourhoods with 3+ listings. Thin samples are pulled toward their city average.</span></div>
+      <div class="chart-wrap" id="loc-wrap"><svg id="loc" role="img" aria-label="Location premium by neighbourhood"></svg><div class="tip" hidden></div></div>
+      <div class="findings" id="loc-find"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>How old are the buildings?</h3><span class="small muted" id="age-sub"></span></div>
+      <div class="two">
+        <div><div class="small muted" style="margin-bottom:6px">Listings by decade built</div>
+          <div class="chart-wrap" id="agec-wrap"><svg id="agec" role="img" aria-label="Number of listings by decade built, condo and townhouse"></svg><div class="tip" hidden></div></div></div>
+        <div><div class="small muted" style="margin-bottom:6px">Median asking $/sqft by decade built</div>
+          <div class="chart-wrap" id="agep-wrap"><svg id="agep" role="img" aria-label="Median price per square foot by decade built"></svg><div class="tip" hidden></div></div></div>
+      </div>
+      <div class="legend"><span><i style="background:var(--condo)"></i>Condo</span><span><i style="background:var(--town)"></i>Townhouse</span><span><i style="background:var(--house)"></i>House / duplex</span><span><i style="background:var(--warn-bg);border:1px solid var(--warn-ink)"></i>Leaky-condo era, built 1983–1999</span></div>
+      <div class="findings" id="age-find"></div>
+      <details class="more"><summary>Show the decade table</summary><div class="scroll"><table id="age-table"></table></div></details>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>How luxurious is it?</h3><span class="small muted" id="lux-sub"></span></div>
+      <p class="small muted">A finish score from 0 to 10, built from the building's amenities (concierge, pool, gym, sauna, guest suite) and the listing's own words for finishes (premium appliances, stone counters, air conditioning, heated floors, views, penthouse). Tiers: Standard under 2, Upgraded 2–4, Premium 4–6.5, Luxury 6.5 and up.</p>
+      <div class="two">
+        <div><div class="small muted" style="margin-bottom:6px">Finish score against asking $/sqft</div>
+          <div class="chart-wrap" id="luxs-wrap"><svg id="luxs" role="img" aria-label="Luxury score against price per square foot"></svg><div class="tip" hidden></div></div></div>
+        <div><div class="small muted" style="margin-bottom:6px">How often each feature appears</div>
+          <div class="chart-wrap" id="luxf-wrap"><svg id="luxf" role="img" aria-label="Share of scored listings with each luxury feature"></svg></div></div>
+      </div>
+      <div class="findings" id="lux-find"></div>
+      <h3>Luxury at a discount</h3>
+      <p class="small muted">Premium or luxury finishes, asking at least 5% below model value, with no tenure warnings.</p>
+      <div class="cards" id="lux-cards"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Schools: how good is the elementary school?</h3><span class="small muted" id="sch-sub"></span></div>
+      <p class="small muted">School rating out of 10: where the school's Grade 4 and 7 Foundation Skills Assessment (FSA) results for 2023–2026 rank among Metro Vancouver public schools. 10 means top 10% and 5 means middle of the pack. The school is the listing's catchment school when the listing names one, otherwise the nearest public elementary (confirm the catchment with the school district).</p>
+      <div class="chart-wrap" id="sch-wrap"><svg id="sch" role="img" aria-label="Rating out of 10 for each elementary school serving the listings"></svg><div class="tip" hidden></div></div>
+      <div class="findings" id="sch-find"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Walkability: what can you do without a car?</h3><span class="small muted">Walk score 0–100</span></div>
+      <p class="small muted">Built the way Walk Score works, from OpenStreetMap: groceries, restaurants and cafes, shops, errands and health services, parks and playgrounds, rec centres and libraries, childcare, bus stops and SkyTrain. Anything within 300 m (about 4 minutes) counts fully, and credit fades to nothing by 2 km.</p>
+      <div class="two">
+        <div><div class="small muted" style="margin-bottom:6px">Median walk score by neighbourhood (4+ listings)</div>
+          <div class="chart-wrap" id="walk-wrap"><svg id="walkc" role="img" aria-label="Median walk score by neighbourhood"></svg><div class="tip" hidden></div></div></div>
+        <div><div class="small muted" style="margin-bottom:6px">Walk score against location premium, one dot per listing</div>
+          <div class="chart-wrap" id="wl-wrap"><svg id="wl" role="img" aria-label="Walk score against location premium"></svg><div class="tip" hidden></div></div></div>
+      </div>
+      <div class="findings" id="walk-find"></div>
+    </div>
+  </section>
+
+  <section id="shortlist">
+    <div class="sec-head">
+      <div class="eyebrow">5 · Shortlist</div>
+      <h2>Candidates for the family</h2>
+      <p class="muted">Sorted by how far each home asks below its model value. Warnings flag the usual reasons a price looks low, such as leasehold land, a presale, or a third bedroom that is really a den. Tap a row for its schools, SkyTrain station, price history and the listing link.</p>
+    </div>
+    <div class="panel">
+      <div class="controls">
+        <div class="ctl" style="grid-column: 1 / -1"><span class="lab">Area</span><div class="chips" id="f-area"></div></div>
+        <div class="ctl"><label for="f-type">Type</label><select id="f-type"><option value="">All types</option><option>Condo</option><option>Townhouse</option><option value="House">House / duplex</option></select></div>
+        <div class="ctl"><label for="f-max">Max asking price</label><input type="number" id="f-max" step="25000" min="300000" value="1500000"></div>
+        <div class="ctl"><label for="f-sqft">Min floor area (sqft)</label><input type="number" id="f-sqft" step="50" min="0" value="1000"></div>
+        <div class="ctl"><label for="f-sort">Sort by</label><select id="f-sort"><option value="ovr">Highest overall rating</option><option value="gap">Most below model value</option><option value="school">Best school</option><option value="walk">Most walkable</option><option value="monthly">Lowest monthly cost</option><option value="psf">Lowest $/sqft</option><option value="sqft">Largest</option><option value="station">Closest to SkyTrain</option><option value="newest">Newest building</option></select></div>
+        <label class="check"><input type="checkbox" id="f-clean" checked> Hide leasehold, presale, age-restricted and den-as-bedroom</label>
+        <div class="ctl"><label for="f-loc">Location</label><select id="f-loc"><option value="">Any location</option><option value="prime">Prime or above average</option><option value="avg">Average or better</option><option value="value">Value locations only</option></select></div>
+        <div class="ctl"><label for="f-age">Built</label><select id="f-age"><option value="">Any year</option><option value="2000">2000 or newer</option><option value="2010">2010 or newer</option><option value="2020">2020 or newer</option><option value="noleaky">Skip 1983–1999</option></select></div>
+        <div class="ctl"><label for="f-sch">School rating</label><select id="f-sch"><option value="">Any school</option><option value="5">5/10 or better</option><option value="7">7/10 or better</option><option value="8">8/10 or better</option></select></div>
+        <div class="ctl"><label for="f-walk">Walk score</label><select id="f-walk"><option value="">Any</option><option value="60">60 or more</option><option value="75">75 or more</option><option value="90">90 or more</option></select></div>
+        <div class="ctl"><label for="f-lux">Finish</label><select id="f-lux"><option value="">Any finish</option><option value="2">Upgraded or better</option><option value="4">Premium or better</option><option value="6.5">Luxury only</option></select></div>
+        <label class="check"><input type="checkbox" id="f-verified"> Only listings with verified details</label>
+        <div class="ctl afford" style="grid-column: 1 / -1"><span class="lab">Monthly cost assumptions</span></div>
+        <div class="ctl"><label for="a-down">Down payment %</label><input type="number" id="a-down" min="5" max="100" step="1" value="20"></div>
+        <div class="ctl"><label for="a-rate">Mortgage rate %</label><input type="number" id="a-rate" min="0" max="15" step="0.05" value="4.5"></div>
+        <div class="ctl"><label for="a-amort">Amortization (years)</label><input type="number" id="a-amort" min="5" max="35" step="1" value="25"></div>
+        <p class="small muted" style="grid-column: span 2; align-self: center">Monthly cost = mortgage + strata fee + property tax ÷ 12. The rate is a placeholder, so enter the one your lender quotes. If a listing is missing its fee or tax, the page uses the median for that city and type and marks it “est.”</p>
+      </div>
+    </div>
+    <div class="panel" id="scorecards">
+      <div class="panel-head"><h3>Scorecards</h3><span class="count" id="count"></span></div>
+      <p class="small muted">Every home gets a player card. The six attributes are rated 40–99: <b>VAL</b> asking price against model value, <b>SPC</b> floor area, <b>SCH</b> school rating and distance, <b>WLK</b> walk score, <b>LOC</b> location premium, <b>BLD</b> building age and finish. The overall rating (OVR) weights them with the sliders below. Card colour: gold for 80+, silver for 70–79, bronze below that, and a dark <b>Value pick</b> card for clean listings that ask 15% or more below model value. Tap a card to open the listing.</p>
+      <div class="weights" id="weights"></div>
+      <div class="futs" id="futs"></div>
+      <button class="more-btn" id="futs-more" type="button">Show 12 more</button>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>All matching listings</h3></div>
+      <div class="scroll">
+        <table id="list">
+          <thead><tr>
+            <th>OVR</th><th>Home</th><th class="n">Asking</th><th class="n hide-sm">Model value</th><th class="n">vs model</th>
+            <th class="n">Sqft</th><th class="n hide-sm">$/sqft</th><th class="n hide-sm">Built</th><th class="n">Monthly</th><th class="hide-sm">Signals</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="notes">
+    <div class="sec-head">
+      <div class="eyebrow">6 · Limits and next steps</div>
+      <h2>How far to trust this</h2>
+    </div>
+    <div class="notes" id="notes-body"></div>
+  </section>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const MAP = /*__MAP__*/null;
+
+const $ = (s, el = document) => el.querySelector(s);
+const typeVar = t => t === "Condo" ? "condo" : t === "Townhouse" ? "town" : "house";
+const fmt$ = v => v == null ? "—" : "$" + Math.round(v).toLocaleString("en-CA");
+const fmtK = v => v == null ? "—" : v >= 1e6 ? "$" + (v / 1e6).toFixed(2) + "M" : "$" + Math.round(v / 1000) + "K";
+const pct = (v, d = 1) => v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d) + "%";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const median = a => { const b = a.filter(x => x != null).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const dateLabel = iso => new Date(iso + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+
+const FLAG_TEXT = {
+  "leasehold": "Leasehold land",
+  "freehold tenure not established": "Tenure unconfirmed",
+  "resale not established": "May be presale / assignment",
+  "third-bedroom integrity conflict": "3rd bedroom may be a den",
+  "adult oriented": "Age-restricted",
+  "outside City of Vancouver jurisdiction": "UBC / UEL area",
+};
+const HARD_FLAGS = new Set(["leasehold", "resale not established", "third-bedroom integrity conflict", "adult oriented"]);
+const isRestricted = l => l.flags.some(f => HARD_FLAGS.has(f)) || /Leasehold|Undivided/.test(l.tenure || "");
+
+const L = DATA.listings;
+const AREAS = [...new Set(L.map(l => l.area))].sort();
+
+// Fill missing strata/tax with the city×type median, marked as estimates.
+const medBy = {};
+for (const a of AREAS) for (const t of ["Condo", "Townhouse", "House"]) {
+  const g = L.filter(l => l.area === a && l.type === t);
+  medBy[a + t] = { strata: median(g.map(l => l.strata)), taxes: median(g.map(l => l.taxes)) };
+}
+
+/* ---------- Header facts ---------- */
+function renderFacts() {
+  const clean = L.filter(l => !isRestricted(l));
+  const deals = clean.filter(l => l.gap <= -10);
+  const gv = DATA.gvr.filter(g => g.area === "Greater Vancouver");
+  const apt = gv.find(g => g.property_type === "apartment"), th = gv.find(g => g.property_type === "townhouse");
+  $("#scanline").textContent = `Scan of ${dateLabel(DATA.latest_scan)} · ${DATA.scan_count} scans since ${dateLabel(DATA.first_scan)}`;
+  const facts = [
+    [L.length, `homes up to $1.5M · ${DATA.sources.research_listings} from Hermes research, ${DATA.sources.inventory_listings} from its inventory`],
+    [deals.length, "clean listings asking 10%+ below model value"],
+    [apt ? pct(apt.pct_1y) : "—", "Greater Vancouver condo benchmark, past year" + (th ? ` (townhouses ${pct(th.pct_1y)})` : "")],
+    ["±" + Math.round(DATA.model.sigma_pct) + "%", "typical model error, so only big gaps mean something"],
+  ];
+  $("#facts").innerHTML = facts.map(([v, l]) => `<div class="fact"><span class="v num">${v}</span><span class="l">${l}</span></div>`).join("");
+}
+
+/* ---------- Market ---------- */
+const GVR_AREAS = ["Burnaby North", "Burnaby South", "Burnaby East", "New Westminster", "Port Moody", "Coquitlam", "Port Coquitlam", "Vancouver East", "Vancouver West", "Greater Vancouver"];
+const TYPES = [["apartment", "Condo"], ["townhouse", "Townhouse"], ["detached", "Detached"]];
+let gvrType = "apartment";
+
+function dbar(v, span) {
+  if (v == null) return "";
+  const w = Math.min(Math.abs(v) / span, 1) * 50;
+  const color = v < 0 ? "var(--above)" : "var(--below)";
+  const left = v < 0 ? 50 - w : 50;
+  return `<div class="dbar" aria-hidden="true"><div class="axis"></div><div class="fill" style="left:${left}%;width:${w}%;background:${color}"></div></div>`;
+}
+
+function renderGvr() {
+  $("#gvr-type").innerHTML = TYPES.map(([k, n]) => `<button aria-pressed="${k === gvrType}" data-k="${k}">${n}</button>`).join("");
+  const rows = GVR_AREAS.map(a => DATA.gvr.find(g => g.area === a && g.property_type === gvrType)).filter(Boolean);
+  if (!rows.length) { $("#gvr").innerHTML = `<tr><td class="empty">Benchmark data was not available when this page was built.</td></tr>`; return; }
+  const span = Math.max(15, ...rows.flatMap(r => [Math.abs(r.pct_1y), Math.abs(r.pct_3y)]));
+  $("#gvr").innerHTML = `<thead><tr><th>Area</th><th class="n">Benchmark</th><th class="n">1 month</th><th class="n">1 year</th><th class="n">3 years</th><th class="n hide-sm">5 years</th><th class="n hide-sm">10 years</th></tr></thead><tbody>` +
+    rows.map(r => `<tr${r.area === "Greater Vancouver" ? ' style="font-weight:600"' : ""}><td>${r.area}</td><td class="n">${fmt$(r.benchmark_price)}</td><td class="n">${pct(+r.pct_1m)}</td>
+      <td class="n"><div class="dbar-cell"><span>${pct(+r.pct_1y)}</span>${dbar(+r.pct_1y, span)}</div></td>
+      <td class="n"><div class="dbar-cell"><span>${pct(+r.pct_3y)}</span>${dbar(+r.pct_3y, span)}</div></td>
+      <td class="n hide-sm">${pct(+r.pct_5y)}</td><td class="n hide-sm">${pct(+r.pct_10y)}</td></tr>`).join("") + "</tbody>";
+  const month = rows[0].month ? new Date(rows[0].month + "T12:00:00").toLocaleDateString("en-CA", { month: "long", year: "numeric" }) : "";
+  $("#path-title").textContent = `Benchmark price over 10 years, to ${month}`;
+  renderPath(); renderBars();
+  $("#gvr-note").textContent = "Bars show the 1-year and 3-year change on the same scale. Red means prices fell over that period. The benchmark covers all bedroom counts, so a 3-bed usually costs more than the figure shown.";
+}
+$("#gvr-type").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { gvrType = b.dataset.k; renderGvr(); } });
+
+function renderFindings() {
+  const g = (a, t) => DATA.gvr.find(x => x.area === a && x.property_type === t);
+  const f = [];
+  const aptAreas = ["Burnaby South", "Burnaby North", "New Westminster", "Port Moody", "Vancouver East"].map(a => g(a, "apartment")).filter(Boolean);
+  if (aptAreas.length) {
+    const lo = Math.min(...aptAreas.map(r => +r.pct_1y)), hi = Math.max(...aptAreas.map(r => +r.pct_1y));
+    f.push(["Condo prices fell for a year straight", `Condo benchmarks in your target areas are down ${Math.abs(hi).toFixed(1)}% to ${Math.abs(lo).toFixed(1)}% from a year ago, and ${Math.abs(Math.max(...aptAreas.map(r => +r.pct_3y))).toFixed(0)}% to ${Math.abs(Math.min(...aptAreas.map(r => +r.pct_3y))).toFixed(0)}% below their level three years ago.`]);
+  }
+  const pm = g("Port Moody", "townhouse"), bs = g("Burnaby South", "townhouse");
+  if (pm && bs) f.push(["Townhouses held up best", `Port Moody townhouses are down only ${Math.abs(+pm.pct_1y).toFixed(1)}% in a year and remain ${(+pm.pct_5y).toFixed(1)}% above 5 years ago. Burnaby South townhouses fell ${Math.abs(+bs.pct_1y).toFixed(1)}%.`]);
+  const psfC = median(L.filter(l => l.type === "Condo").map(l => l.psf)), psfT = median(L.filter(l => l.type === "Townhouse").map(l => l.psf));
+  f.push(["Townhouses give more space per dollar", `Among 3-bed listings, townhouses ask a median ${fmt$(psfT)}/sqft against ${fmt$(psfC)}/sqft for condos, and they are about ${Math.round((median(L.filter(l => l.type === "Townhouse").map(l => l.sqft)) - median(L.filter(l => l.type === "Condo").map(l => l.sqft))) / 10) * 10} sqft larger. The cheapest townhouses per square foot are in ${DATA.summary.filter(r => r.type === "Townhouse" && r.n >= 5).sort((a, b) => a.med_psf - b.med_psf).slice(0, 2).map(r => r.area).join(" and ")}.`]);
+  const cut = L.filter(l => l.cuts > 0).length;
+  if (DATA.rents && Object.keys(DATA.rents).length) {
+    const rs = Object.entries(DATA.rents).sort((a, b) => b[1].median - a[1].median);
+    const own = median(L.filter(l => l.type !== "House" && l.band === "main").map(l => monthly(l).total));
+    f.push(["Renting a 3-bed costs less than owning one", `Typical asking rent for a 3-bed: ${rs.map(([c, r]) => `${c} ${fmt$(r.median)}/mo`).join(", ")} (Hermes inventory, ${rs.reduce((a, [, r]) => a + r.n, 0)} rentals). Owning the median condo or townhouse under $1.2M costs about ${fmt$(own)}/mo with the default assumptions, so buying pays off mainly through principal paid down and long-run appreciation.`]);
+  }
+  f.push(["Sellers are starting to cut", `${cut} of the ${L.length} active listings have cut their price at least once since our scans first saw them, most often in ${DATA.summary.filter(r => r.n >= 10).sort((a, b) => b.share_cut - a.share_cut).slice(0, 2).map(r => `${r.area} ${r.type.toLowerCase()}s (${Math.round(r.share_cut)}%)`).join(" and ")}. With falling benchmarks, offering below asking is normal right now.`]);
+  $("#findings").innerHTML = f.map(([t, b]) => `<div class="finding"><b>${t}</b><p class="small muted">${b}</p></div>`).join("");
+}
+
+function renderAsks() {
+  const rows = DATA.summary;
+  $("#asks").innerHTML = `<thead><tr><th>City</th><th>Type</th><th class="n">Listings</th><th class="n">Median ask</th><th class="n">$/sqft</th><th class="n">Sqft</th><th class="n hide-sm">Strata fee</th><th class="n hide-sm">Price cut</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td>${r.area}</td><td><span class="type-dot" style="background:var(--${typeVar(r.type)})"></span>${r.type}</td><td class="n">${r.n}</td><td class="n">${fmt$(r.med_price)}</td><td class="n">${fmt$(r.med_psf)}</td><td class="n">${Math.round(r.med_sqft).toLocaleString()}</td><td class="n hide-sm">${r.med_strata ? fmt$(r.med_strata) : "—"}</td><td class="n hide-sm">${Math.round(r.share_cut)}%</td></tr>`).join("") + "</tbody>";
+}
+
+/* ---------- Market charts ---------- */
+const PATH_AREAS = [["Burnaby North", "var(--s1)"], ["Burnaby South", "var(--s2)"], ["New Westminster", "var(--s3)"], ["Port Moody", "var(--s4)"], ["Vancouver East", "var(--s5)"], ["Greater Vancouver", "var(--ref)"]];
+const HORIZONS = [[-10, "pct_10y", "10 years ago"], [-5, "pct_5y", "5 years ago"], [-3, "pct_3y", "3 years ago"], [-1, "pct_1y", "1 year ago"], [-1 / 12, "pct_1m", "1 month ago"], [0, null, "Latest"]];
+let pathSeries = [], pathGeom = null;
+function renderPath() {
+  const wrap = $("#path-wrap"), svg = $("#path");
+  pathSeries = PATH_AREAS.map(([a, c]) => {
+    const r = DATA.gvr.find(g => g.area === a && g.property_type === gvrType);
+    if (!r) return null;
+    return { area: a, color: c, pts: HORIZONS.map(([t, k, lab]) => ({ t, lab, v: k ? r.benchmark_price / (1 + (+r[k]) / 100) : r.benchmark_price })) };
+  }).filter(Boolean);
+  $("#path-legend").innerHTML = pathSeries.map(s => `<span><i style="background:${s.color}"></i>${s.area}</span>`).join("");
+  if (!pathSeries.length) { svg.innerHTML = ""; return; }
+  const W = Math.max(320, wrap.clientWidth), narrow = W < 560, H = narrow ? 280 : 340;
+  const m = { l: 62, r: narrow ? 14 : 132, t: 14, b: 32 };
+  const vals = pathSeries.flatMap(s => s.pts.map(p => p.v));
+  const step = gvrType === "detached" ? 250000 : 100000;
+  const lo = Math.floor(Math.min(...vals) / step) * step, hi = Math.ceil(Math.max(...vals) / step) * step;
+  const X = t => m.l + (t + 10) / 10 * (W - m.l - m.r), Y = v => H - m.b - (v - lo) / (hi - lo) * (H - m.t - m.b);
+  pathGeom = { X, Y, m, W, H };
+  let g = "";
+  for (let v = lo; v <= hi + 1; v += step) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${fmtK(v)}</text>`;
+  const year = +((DATA.gvr[0]?.month || "2026").slice(0, 4));
+  for (const t of [-10, -5, -3, -1, 0]) g += `<text x="${X(t)}" y="${H - 10}" text-anchor="${t === 0 ? "end" : "middle"}">${year + t}</text>`;
+  g += `<line id="path-x" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink-3)" stroke-dasharray="3 3" visibility="hidden"/>`;
+  for (const s of pathSeries) {
+    const d = s.pts.map((p, i) => `${i ? "L" : "M"}${X(p.t).toFixed(1)},${Y(p.v).toFixed(1)}`).join("");
+    const ref = s.area === "Greater Vancouver";
+    g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" ${ref ? 'stroke-dasharray="5 4"' : ""} stroke-linejoin="round"/>`;
+    for (const p of s.pts) if (p.t !== -1 / 12) g += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="${p.t === 0 ? 4.5 : 3}" fill="${s.color}" stroke="var(--panel)" stroke-width="2"/>`;
+  }
+  if (!narrow) {
+    const labs = pathSeries.map(s => ({ s, y: Y(s.pts.at(-1).v) })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < labs.length; i++) labs[i].y = Math.max(labs[i].y, labs[i - 1].y + 15);
+    for (const { s, y } of labs) g += `<text class="lbl" x="${W - m.r + 10}" y="${y + 4}">${s.area.replace("Greater Vancouver", "Greater Van.")}</text>`;
+  }
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = g;
+}
+$("#path").addEventListener("pointermove", e => {
+  if (!pathGeom || !pathSeries.length) return;
+  const r = $("#path").getBoundingClientRect(), x = e.clientX - r.left;
+  const idx = pathSeries[0].pts.reduce((b, p, i, a) => Math.abs(pathGeom.X(p.t) - x) < Math.abs(pathGeom.X(a[b].t) - x) ? i : b, 0);
+  const line = $("#path-x"); line.setAttribute("x1", pathGeom.X(pathSeries[0].pts[idx].t)); line.setAttribute("x2", pathGeom.X(pathSeries[0].pts[idx].t)); line.setAttribute("visibility", "visible");
+  const rows = [...pathSeries].sort((a, b) => b.pts[idx].v - a.pts[idx].v).map(s => `<span style="color:${s.color}">●</span> ${s.area} <span class="mono">${fmtK(s.pts[idx].v)}</span>`).join("<br>");
+  showTip("#path-wrap", e, `<b>${pathSeries[0].pts[idx].lab}</b><br>${rows}`);
+});
+$("#path").addEventListener("pointerleave", () => { hideTip("#path-wrap"); $("#path-x")?.setAttribute("visibility", "hidden"); });
+
+function renderBars() {
+  const wrap = $("#bars-wrap"), svg = $("#bars");
+  const rows = GVR_AREAS.map(a => DATA.gvr.find(g => g.area === a && g.property_type === gvrType)).filter(Boolean).sort((a, b) => a.pct_1y - b.pct_1y);
+  const name = TYPES.find(t => t[0] === gvrType)[1];
+  $("#bars-sub").textContent = name + " benchmark";
+  const W = Math.max(300, wrap.clientWidth), row = 26, m = { l: 128, r: 16, t: 6, b: 24 }, H = m.t + m.b + rows.length * row;
+  const span = Math.max(10, Math.ceil(Math.max(...rows.map(r => Math.abs(r.pct_1y))) / 5) * 5);
+  const X = v => m.l + (v + span) / (2 * span) * (W - m.l - m.r);
+  let g = "";
+  for (let v = -span; v <= span; v += 5) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${H - m.b}" stroke="${v === 0 ? "var(--ink-3)" : "var(--line-2)"}"/><text x="${X(v)}" y="${H - 6}" text-anchor="middle">${v > 0 ? "+" : ""}${v}%</text>`;
+  rows.forEach((r, i) => {
+    const v = +r.pct_1y, y = m.t + i * row + 5, h = row - 10, x0 = X(Math.min(0, v)), w = Math.abs(X(v) - X(0));
+    const ref = r.area === "Greater Vancouver";
+    g += `<text class="lbl" x="${m.l - 8}" y="${y + h / 2 + 4}" text-anchor="end" style="${ref ? "font-weight:800" : ""}">${r.area}</text>`;
+    g += `<rect x="${x0}" y="${y}" width="${Math.max(w, 1)}" height="${h}" rx="3" fill="${ref ? "var(--ref)" : v < 0 ? "var(--above)" : "var(--below)"}"><title>${r.area}: ${pct(v)}</title></rect>`;
+    g += `<text x="${v < 0 ? x0 - 5 : X(v) + 5}" y="${y + h / 2 + 4}" text-anchor="${v < 0 ? "end" : "start"}" style="fill:var(--ink-2)">${pct(v)}</text>`;
+  });
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = g;
+}
+
+function renderStrip() {
+  const wrap = $("#strip-wrap"), svg = $("#strip");
+  const groups = DATA.summary.map(s => ({ ...s, pts: L.filter(l => l.area === s.area && l.type === s.type) })).sort((a, b) => a.med_psf - b.med_psf);
+  const W = Math.max(300, wrap.clientWidth), row = 34, m = { l: 150, r: 16, t: 6, b: 26 }, H = m.t + m.b + groups.length * row;
+  const lo = 300, hi = 1400, X = v => m.l + (Math.min(Math.max(v, lo), hi) - lo) / (hi - lo) * (W - m.l - m.r);
+  let g = "";
+  for (let v = 400; v <= hi; v += 200) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--line-2)"/><text x="${X(v)}" y="${H - 8}" text-anchor="middle">$${v}</text>`;
+  groups.forEach((gr, i) => {
+    const cy = m.t + i * row + row / 2, col = `var(--${typeVar(gr.type)})`;
+    g += `<text class="lbl" x="${m.l - 10}" y="${cy + 4}" text-anchor="end">${gr.area.replace("New Westminster", "New West")} · ${gr.type.toLowerCase()}</text>`;
+    for (const l of gr.pts) {
+      const k = L.indexOf(l), jit = ((k * 9301 + 49297) % 233280) / 233280 - .5;
+      g += `<circle cx="${X(l.psf).toFixed(1)}" cy="${(cy + jit * (row - 12)).toFixed(1)}" r="3.2" fill="${col}" fill-opacity=".7" data-i="${k}"/>`;
+    }
+    g += `<rect x="${X(gr.med_psf) - 1.5}" y="${cy - row / 2 + 3}" width="3" height="${row - 6}" rx="1.5" fill="var(--ink)"/>`;
+  });
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = g;
+}
+$("#strip").addEventListener("pointermove", e => { const c = e.target.closest("circle[data-i]"); if (!c) return hideTip("#strip-wrap"); const l = L[+c.dataset.i]; showTip("#strip-wrap", e, `<b>${esc(l.address)}</b><br><span class="mono">${fmt$(l.psf)}/sqft · ${fmt$(l.price)}</span>`); });
+$("#strip").addEventListener("pointerleave", () => hideTip("#strip-wrap"));
+$("#strip").addEventListener("click", e => { const c = e.target.closest("circle[data-i]"); if (c) openListing(L[+c.dataset.i]); });
+
+/* ---------- Map ---------- */
+const ST = {
+  "Waterfront": [49.2856, -123.1115], "Stadium": [49.2794, -123.1094], "Main St": [49.2732, -123.1004], "Commercial-Broadway": [49.2626, -123.0692],
+  "Nanaimo": [49.2483, -123.0559], "29th Ave": [49.2443, -123.0460], "Joyce": [49.2384, -123.0318], "Patterson": [49.2297, -123.0126],
+  "Metrotown": [49.2258, -123.0039], "Royal Oak": [49.2200, -122.9885], "Edmonds": [49.2123, -122.9592], "22nd St": [49.2000, -122.9490],
+  "New Westminster": [49.2015, -122.9127], "Columbia": [49.2048, -122.9061], "Scott Rd": [49.2044, -122.8741], "Sapperton": [49.2248, -122.8894],
+  "Braid": [49.2330, -122.8830], "Lougheed": [49.2485, -122.8970], "Production Way": [49.2534, -122.9181], "VCC-Clark": [49.2658, -123.0789],
+  "Renfrew": [49.2590, -123.0450], "Rupert": [49.2608, -123.0328], "Gilmore": [49.2649, -123.0137], "Brentwood": [49.2664, -123.0019],
+  "Holdom": [49.2647, -122.9822], "Sperling": [49.2593, -122.9640], "Lake City": [49.2546, -122.9391], "Burquitlam": [49.2613, -122.8899],
+  "Moody Centre": [49.2779, -122.8459], "Inlet Centre": [49.2772, -122.8279], "Coquitlam Central": [49.2740, -122.8000], "Lincoln": [49.2804, -122.7941],
+  "Lafarge Lake": [49.2856, -122.7916], "Port Coquitlam WCE": [49.2618, -122.7740], "City Centre": [49.2825, -123.1185], "Yaletown": [49.2745, -123.1219], "Olympic Village": [49.2666, -123.1153],
+  "Broadway-City Hall": [49.2627, -123.1149], "King Edward": [49.2491, -123.1155], "Oakridge": [49.2332, -123.1165], "Langara": [49.2263, -123.1162], "Marine Dr": [49.2098, -123.1170],
+};
+const LINES = [
+  ["Waterfront", "Stadium", "Main St", "Commercial-Broadway", "Nanaimo", "29th Ave", "Joyce", "Patterson", "Metrotown", "Royal Oak", "Edmonds", "22nd St", "New Westminster", "Columbia", "Scott Rd"],
+  ["Columbia", "Sapperton", "Braid", "Lougheed", "Production Way"],
+  ["VCC-Clark", "Commercial-Broadway", "Renfrew", "Rupert", "Gilmore", "Brentwood", "Holdom", "Sperling", "Lake City", "Production Way", "Lougheed", "Burquitlam", "Moody Centre", "Inlet Centre", "Coquitlam Central", "Lincoln", "Lafarge Lake"],
+  ["Waterfront", "City Centre", "Yaletown", "Olympic Village", "Broadway-City Hall", "King Edward", "Oakridge", "Langara", "Marine Dr"],
+];
+const MAP_LABELS = [["Vancouver", 49.2395, -123.085], ["Burnaby", 49.2405, -122.975], ["New Westminster", 49.19, -122.925], ["Port Moody", 49.2935, -122.86], ["Coquitlam", 49.2605, -122.83], ["Port Coquitlam", 49.2665, -122.752]];
+const KEY_STN = new Set(["Metrotown", "Brentwood", "Lougheed", "Moody Centre", "Commercial-Broadway", "New Westminster", "Joyce", "Oakridge", "Edmonds", "Waterfront"]);
+const gapColor = g => g <= -10 ? "var(--below)" : g <= -5 ? "color-mix(in srgb, var(--below) 45%, var(--panel))" : g < 5 ? "var(--ref)" : "var(--above)";
+
+/* ---------- Top-pick cards ---------- */
+function renderCards(rows, sel = "#cards", n = 6) {
+  const top = rows.slice(0, n);
+  $(sel).innerHTML = top.length ? top.map(({ l, mc }, i) => {
+    const lo = Math.min(l.price, l.fair) * .9, hi = Math.max(l.price, l.fair) * 1.04, P = v => (v - lo) / (hi - lo) * 100;
+    const a = P(l.price), f = P(l.fair);
+    const warn = [...l.flags.filter(x => FLAG_TEXT[x]).map(x => `<span class="pill warn">${FLAG_TEXT[x]}</span>`), l.cuts > 0 ? `<span class="pill good">Price cut ${pct(l.cut_pct)}</span>` : "", !l.verified ? `<span class="pill plain">Details not verified</span>` : ""].join("");
+    return `<button class="card" data-u="${esc(l.url)}">
+      <div class="top"><div><div class="addr">${esc(l.address)}</div><div class="sub"><span class="type-dot" style="background:var(--${typeVar(l.type)})"></span>${esc(l.neighbourhood)} · ${l.type}</div></div><span class="rank">${i + 1}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="price num">${fmtK(l.price)}</span><span class="gap-v" style="color:${l.gap <= -10 ? "var(--below)" : "var(--ink-2)"}">${pct(l.gap)} vs model</span></div>
+      <div><div class="vsbar"><div class="track"></div><div class="span" style="left:${Math.min(a, f)}%;width:${Math.abs(f - a)}%;${l.gap > 0 ? "background:var(--above)" : ""}"></div><div class="ask" style="left:${a}%;${l.gap > 0 ? "background:var(--above)" : ""}"></div><div class="fair" style="left:${f}%"></div></div>
+        <div class="vs-legend"><span>Asking ${fmtK(l.price)}</span><span>Model ${fmtK(l.fair)}</span></div></div>
+      <div class="stats"><div><b>${l.sqft.toLocaleString()}</b><span>sqft</span></div><div><b>${l.beds}/${l.baths ?? "—"}</b><span>bed/bath</span></div><div><b>${l.year ?? "—"}</b><span>built</span></div><div><b>${fmtK(mc.total)}</b><span>per month${mc.partial ? " (partial)" : mc.est ? "*" : ""}</span></div></div>
+      <div class="small muted">SkyTrain: ${esc(l.station)} · ${l.station_km < 1 ? Math.round(l.station_km * 1000) + " m" : l.station_km.toFixed(1) + " km"}${l.elem ? `<br>School: ${esc(l.elem)}` : ""}</div>
+      <div><span class="pill plain">${l.loc_tier} location</span>${l.year ? `<span class="pill plain">Built ${l.year}</span>` : ""}${l.lux_tier ? `<span class="pill plain">${l.lux_tier} finish</span>` : ""}${l.leaky_era ? `<span class="pill warn">Leaky-condo era</span>` : ""}</div>
+      ${warn ? `<div>${warn}</div>` : ""}
+    </button>`;
+  }).join("") : `<div class="empty">No listings match the filters.</div>`;
+}
+$("#lux-cards").addEventListener("click", e => { const c = e.target.closest(".card"); if (c) openListing(L.find(l => l.url === c.dataset.u)); });
+
+
+/* ---------- Location, age, finish ---------- */
+const CITY_SHORT = { "New Westminster": "New West", "Port Coquitlam": "PoCo" };
+let locCity = "";
+function renderLoc() {
+  const cities = ["", ...AREAS];
+  $("#loc-city").innerHTML = cities.map(c => `<button aria-pressed="${c === locCity}" data-c="${esc(c)}">${c ? esc(CITY_SHORT[c] || c) : "All"}</button>`).join("");
+  $("#loc-cities").innerHTML = [...DATA.location.areas].sort((a, b) => b.premium - a.premium).map(a => `<div class="fact"><span class="v num" style="color:${a.premium >= 0 ? "var(--above)" : "var(--below)"}">${pct(a.premium)}</span><span class="l">${esc(a.area)} vs the six-city average</span></div>`).join("");
+  const rows = DATA.location.neighbourhoods.filter(n => n.n >= 3 && (!locCity || n.area === locCity) && n.neighbourhood !== n.area).sort((a, b) => b.premium - a.premium);
+  const wrap = $("#loc-wrap"), svg = $("#loc");
+  const W = Math.max(300, wrap.clientWidth), narrow = W < 560, row = 24, m = { l: narrow ? 150 : 210, r: 16, t: 4, b: 24 }, H = m.t + m.b + rows.length * row;
+  const span = Math.max(15, Math.ceil(Math.max(...rows.map(r => Math.abs(r.premium))) / 5) * 5);
+  const X = v => m.l + (v + span) / (2 * span) * (W - m.l - m.r);
+  let g = "";
+  for (let v = -span; v <= span; v += 5) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${H - m.b}" stroke="${v === 0 ? "var(--ink-3)" : "var(--line-2)"}"/>${v % 10 === 0 || !narrow ? `<text x="${X(v)}" y="${H - 6}" text-anchor="middle">${v > 0 ? "+" : ""}${v}%</text>` : ""}`;
+  rows.forEach((r, i) => {
+    const v = r.premium, y = m.t + i * row + 4, h = row - 8, x0 = X(Math.min(0, v)), w = Math.abs(X(v) - X(0));
+    g += `<text class="lbl" x="${m.l - 8}" y="${y + h / 2 + 4}" text-anchor="end">${esc(r.neighbourhood)}${locCity ? "" : ` <tspan style="fill:var(--ink-3);font-weight:400">${esc(CITY_SHORT[r.area] || r.area)}</tspan>`}</text>`;
+    g += `<rect x="${x0}" y="${y}" width="${Math.max(w, 1.5)}" height="${h}" rx="3" fill="${v >= 0 ? "var(--above)" : "var(--below)"}" data-k="${i}"/>`;
+    g += `<text x="${v < 0 ? x0 - 5 : X(v) + 5}" y="${y + h / 2 + 4}" text-anchor="${v < 0 ? "end" : "start"}" style="fill:var(--ink-2)">${pct(v)}</text>`;
+  });
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = g; svg._rows = rows;
+}
+$("#loc-city").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { locCity = b.dataset.c; renderLoc(); } });
+$("#loc").addEventListener("pointermove", e => { const r = e.target.closest("rect[data-k]"); if (!r) return hideTip("#loc-wrap"); const n = $("#loc")._rows[+r.dataset.k]; showTip("#loc-wrap", e, `<b>${esc(n.neighbourhood)}</b>, ${esc(n.area)}<br>Premium <span class="mono">${pct(n.premium)}</span><br>${n.n} listings · median <span class="mono">${fmt$(n.med_psf)}/sqft</span>`); });
+$("#loc").addEventListener("pointerleave", () => hideTip("#loc-wrap"));
+
+const BANDS = ["Before 1980", "1980s", "1990s", "2000s", "2010s", "2020 or newer"];
+const BAND_SHORT = { "Before 1980": "<1980", "2020 or newer": "2020+" };
+function renderAge() {
+  const known = L.filter(l => l.year != null);
+  $("#age-sub").textContent = `Build year known for ${known.length} of ${L.length} listings`;
+  const cnt = (b, t) => known.filter(l => l.age_band === b && l.type === t).length;
+  const rowOf = (b, t) => DATA.age_bands.find(r => r.age_band === b && r.type === t);
+  const draw = (sel, wrapSel, yMax, yStep, yFmt, marks) => {
+    const W = Math.max(280, $(wrapSel).clientWidth), H = 240, m = { l: 48, r: 8, t: 10, b: 28 };
+    const bw = (W - m.l - m.r) / BANDS.length, X = i => m.l + i * bw, Y = v => H - m.b - v / yMax * (H - m.t - m.b);
+    // Leaky-condo shading: 1983 (30% into the 1980s band) through the end of the 1990s band.
+    let g = `<rect x="${X(1) + bw * .3}" y="${m.t}" width="${bw * 1.7}" height="${H - m.t - m.b}" fill="var(--warn-bg)"/>`;
+    for (let v = 0; v <= yMax; v += yStep) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${yFmt(v)}</text>`;
+    BANDS.forEach((b, i) => g += `<text x="${X(i) + bw / 2}" y="${H - 8}" text-anchor="middle">${BAND_SHORT[b] || b}</text>`);
+    g += marks(X, Y, bw);
+    const svg = $(sel); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.innerHTML = g;
+  };
+  const TYPES3 = ["Condo", "Townhouse", "House"];
+  const maxC = Math.max(...BANDS.flatMap(b => TYPES3.map(t => cnt(b, t))));
+  draw("#agec", "#agec-wrap", Math.ceil(maxC / 10) * 10, 10, v => v, (X, Y, bw) => BANDS.map((b, i) => TYPES3.map((t, j) => {
+    const v = cnt(b, t), w = Math.min(18, bw * .26), x = X(i) + bw / 2 - 1.5 * w - 2 + j * (w + 2);
+    return `<rect x="${x}" y="${Y(v)}" width="${w}" height="${Y(0) - Y(v)}" rx="3" fill="var(--${typeVar(t)})"><title>${b}, ${t}: ${v} listings</title></rect>` + (v ? `<text x="${x + w / 2}" y="${Y(v) - 4}" text-anchor="middle">${v}</text>` : "");
+  }).join("")).join(""));
+  draw("#agep", "#agep-wrap", 1200, 200, v => "$" + v, (X, Y, bw) => TYPES3.map(t => {
+    const pts = BANDS.map((b, i) => [i, rowOf(b, t)]).filter(([, r]) => r && r.n >= 3);
+    const col = `var(--${typeVar(t)})`;
+    return `<path d="${pts.map(([i, r], k) => `${k ? "L" : "M"}${X(i) + bw / 2},${Y(r.med_psf)}`).join("")}" fill="none" stroke="${col}" stroke-width="2"/>` +
+      pts.map(([i, r]) => `<circle cx="${X(i) + bw / 2}" cy="${Y(r.med_psf)}" r="5" fill="${col}" stroke="var(--panel)" stroke-width="2"><title>${BANDS[i]}, ${t}: $${Math.round(r.med_psf)}/sqft (${r.n} listings)</title></circle>`).join("");
+  }).join(""));
+  $("#age-table").innerHTML = `<thead><tr><th>Built</th><th>Type</th><th class="n">Listings</th><th class="n">Median ask</th><th class="n">$/sqft</th><th class="n">Strata $/sqft/mo</th><th class="n">Median vs model</th></tr></thead><tbody>` +
+    BANDS.flatMap(b => TYPES3.map(t => rowOf(b, t)).filter(Boolean)).map(r => `<tr><td>${r.age_band}</td><td>${r.type}</td><td class="n">${r.n}</td><td class="n">${fmt$(r.med_price)}</td><td class="n">${fmt$(r.med_psf)}</td><td class="n">${r.med_strata_psf ? "$" + r.med_strata_psf.toFixed(2) : "—"}</td><td class="n">${pct(r.med_gap)}</td></tr>`).join("") + "</tbody>";
+
+  const perDecade = (Math.exp(DATA.model.coefs.age10) - 1) * 100;
+  const old = DATA.age_bands.find(r => r.age_band === "Before 1980" && r.type === "Condo"), fresh = DATA.age_bands.find(r => r.age_band === "2020 or newer" && r.type === "Condo");
+  const leaky = L.filter(l => l.leaky_era);
+  const f = [
+    ["Each decade of age costs about " + Math.abs(perDecade).toFixed(0) + "%", `For the same size, type and location, a building 10 years older asks about ${Math.abs(perDecade).toFixed(1)}% less. Older buildings are cheaper to buy, but budget for higher upkeep and special levies.`],
+    old && fresh ? ["Pre-1980 condos cost half as much per sqft", `Condos built before 1980 ask a median ${fmt$(old.med_psf)}/sqft against ${fmt$(fresh.med_psf)} for 2020 or newer. Many of the old ones are large 1970s units with high strata fees (${old.med_strata_psf ? "$" + old.med_strata_psf.toFixed(2) : "—"}/sqft a month).`] : null,
+    [`${leaky.length} listings are from the leaky-condo era`, "BC buildings from about 1983 to 1999 often had building-envelope failures. Many were rebuilt since then. Ask for the depreciation report, the last 2 years of strata minutes, and proof the envelope was remediated before you offer."],
+  ].filter(Boolean);
+  $("#age-find").innerHTML = f.map(([t, b]) => `<div class="finding"><b>${t}</b><p class="small muted">${b}</p></div>`).join("");
+}
+
+function renderLux() {
+  const scored = L.filter(l => l.lux != null);
+  $("#lux-sub").textContent = `Scored for ${scored.length} of ${L.length} listings (those with full details)`;
+  // Scatter: finish score vs $/sqft
+  {
+    const wrap = $("#luxs-wrap"), svg = $("#luxs"), W = Math.max(280, wrap.clientWidth), H = 260, m = { l: 52, r: 10, t: 10, b: 32 };
+    const X = v => m.l + v / 10 * (W - m.l - m.r), Y = v => H - m.b - (Math.min(Math.max(v, 300), 1400) - 300) / 1100 * (H - m.t - m.b);
+    let g = "";
+    [[0, 2, "Standard"], [2, 4, "Upgraded"], [4, 6.5, "Premium"], [6.5, 10, "Luxury"]].forEach(([a, b, n], i) => {
+      if (i % 2) g += `<rect x="${X(a)}" y="${m.t}" width="${X(b) - X(a)}" height="${H - m.t - m.b}" fill="var(--line-2)" opacity=".6"/>`;
+      g += `<text x="${(X(a) + X(b)) / 2}" y="${m.t + 12}" text-anchor="middle">${n}</text>`;
+    });
+    for (let v = 400; v <= 1400; v += 200) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">$${v}</text>`;
+    for (let v = 0; v <= 10; v += 2) g += `<text x="${X(v)}" y="${H - 12}" text-anchor="middle">${v}</text>`;
+    g += `<text x="${(m.l + W - m.r) / 2}" y="${H - 1}" text-anchor="middle">Finish score</text>`;
+    for (const l of scored) g += `<circle cx="${X(l.lux).toFixed(1)}" cy="${Y(l.psf).toFixed(1)}" r="4.5" fill="var(--${typeVar(l.type)})" fill-opacity=".85" stroke="var(--panel)" stroke-width="1.5" data-i="${L.indexOf(l)}" style="cursor:pointer"/>`;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.innerHTML = g;
+  }
+  // Feature frequency
+  {
+    const counts = {};
+    for (const l of scored) for (const h of l.lux_hits || []) counts[h] = (counts[h] || 0) + 1;
+    const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const wrap = $("#luxf-wrap"), svg = $("#luxf"), W = Math.max(280, wrap.clientWidth), row = 21, m = { l: 190, r: 44, t: 2, b: 4 }, H = m.t + m.b + rows.length * row;
+    const X = v => m.l + v / scored.length * (W - m.l - m.r);
+    let g = "";
+    rows.forEach(([name, n], i) => {
+      const y = m.t + i * row + 4;
+      g += `<text class="lbl" x="${m.l - 8}" y="${y + 10}" text-anchor="end">${esc(name)}</text><rect x="${m.l}" y="${y}" width="${X(n) - m.l}" height="${row - 8}" rx="3" fill="var(--accent)"/><text x="${X(n) + 5}" y="${y + 10}">${Math.round(n / scored.length * 100)}%</text>`;
+    });
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.innerHTML = g;
+  }
+  const perPoint = (Math.exp(DATA.model.coefs.lux || 0) - 1) * 100;
+  const lt = t => DATA.lux_tiers.filter(r => r.lux_tier === t);
+  const luxC = lt("Luxury").find(r => r.type === "Condo"), stdC = lt("Standard").find(r => r.type === "Condo");
+  const f = [
+    ["The market barely pays for finish", `After size, age and location, each finish point adds only about ${perPoint.toFixed(1)}% to the asking price. Premium kitchens, air conditioning and amenities aren't priced in much, so a well-finished home costs about the same as a plain one nearby.`],
+    luxC && stdC ? [`Luxury condos ask ${Math.round((luxC.med_psf / stdC.med_psf - 1) * 100)}% more per sqft`, `Luxury-tier condos ask a median ${fmt$(luxC.med_psf)}/sqft against ${fmt$(stdC.med_psf)} for standard-tier condos. Much of that gap comes from their being newer and in pricier neighbourhoods, not from the finishes.`] : null,
+    (() => {
+      const sp = t => median(L.filter(l => l.type === "Condo" && l.lux_tier === t && l.strata).map(l => l.strata / l.sqft));
+      const a = sp("Standard"), b = sp("Luxury");
+      return a && b ? ["Amenities show up in the strata fee", `Luxury-tier condos pay a median $${b.toFixed(2)}/sqft a month in strata fees against $${a.toFixed(2)} for standard ones, about ${fmt$((b - a) * 1100)} more a month for a 1,100 sqft home.`] : null;
+    })(),
+  ].filter(Boolean);
+  $("#lux-find").innerHTML = f.map(([t, b]) => `<div class="finding"><b>${t}</b><p class="small muted">${b}</p></div>`).join("");
+  const deals = scored.filter(l => l.lux >= 4 && l.gap <= -5 && !isRestricted(l)).sort((a, b) => a.gap - b.gap).map(l => ({ l, mc: monthly(l) }));
+  renderCards(deals, "#lux-cards", 6);
+}
+$("#luxs").addEventListener("pointermove", e => { const c = e.target.closest("circle[data-i]"); if (!c) return hideTip("#luxs-wrap"); const l = L[+c.dataset.i]; showTip("#luxs-wrap", e, listingTip(l) + `<br>Finish <span class="mono">${l.lux.toFixed(1)}/10</span> · ${l.lux_tier}`); });
+$("#luxs").addEventListener("pointerleave", () => hideTip("#luxs-wrap"));
+$("#luxs").addEventListener("click", e => { const c = e.target.closest("circle[data-i]"); if (c) openListing(L[+c.dataset.i]); });
+
+function renderLocFindings() {
+  const nb = DATA.location.neighbourhoods.filter(n => n.n >= 3 && n.neighbourhood !== n.area).sort((a, b) => b.premium - a.premium);
+  const top = nb.slice(0, 3), bot = nb.slice(-3).reverse();
+  const halve = (Math.exp(-DATA.model.coefs.log_station_km * Math.log(2)) - 1) * 100;
+  const f = [
+    ["Most premium", top.map(n => `${n.neighbourhood} (${pct(n.premium, 0)})`).join(", ") + ". You pay extra here for the address itself."],
+    ["Best value locations", bot.map(n => `${n.neighbourhood} (${pct(n.premium, 0)})`).join(", ") + ". Same-size homes cost noticeably less here. Check the commute and the school catchment before deciding."],
+    ["SkyTrain is already priced in by neighbourhood", `Within a neighbourhood, halving the walk to a station adds only about ${pct(halve)} to the asking price, so it's worth picking the unit closest to the station.`],
+  ];
+  $("#loc-find").innerHTML = f.map(([t, b]) => `<div class="finding"><b>${t}</b><p class="small muted">${esc(b)}</p></div>`).join("");
+}
+
+/* ---------- Player ratings ---------- */
+const ATTRS = [["VAL", "Value"], ["SPC", "Space"], ["SCH", "Schools"], ["WLK", "Walk"], ["LOC", "Location"], ["BLD", "Building"]];
+const rankPct = vals => { const s = [...vals].sort((a, b) => a - b); return v => s.length > 1 ? s.filter(x => x < v).length / (s.length - 1) : .5; };
+const sqftPct = rankPct(L.map(l => l.sqft)), locPct = rankPct(L.map(l => l.loc_prem));
+const clampR = v => Math.round(Math.max(35, Math.min(99, v)));
+for (const l of L) {
+  const age = l.year != null ? 2026 - l.year : null;
+  let bld = age != null ? Math.max(0, Math.min(100, 100 - age * 1.6)) : 50;
+  if (l.lux != null) bld = 0.6 * bld + 0.4 * l.lux * 10;
+  if (l.leaky_era) bld -= 12;
+  l.attr = {
+    VAL: clampR(70 - l.gap * 1.5),
+    SPC: clampR(45 + 54 * sqftPct(l.sqft)),
+    SCH: clampR(40 + 0.59 * (l.school_score ?? 50)),
+    WLK: clampR(40 + 0.59 * (l.walk ?? 50)),
+    LOC: clampR(45 + 54 * locPct(l.loc_prem)),
+    BLD: clampR(40 + 0.59 * bld),
+  };
+}
+function ovr(l) {
+  const tw = ATTRS.reduce((s, [k]) => s + state.w[k], 0) || 1;
+  return Math.round(ATTRS.reduce((s, [k]) => s + state.w[k] * l.attr[k], 0) / tw);
+}
+const CLUB = { "Burnaby": "BBY", "New Westminster": "NWM", "Port Moody": "PMD", "Vancouver": "VAN", "Coquitlam": "CQT", "Port Coquitlam": "PCQ" };
+const tierOf = (l, o) => (!isRestricted(l) && l.gap <= -15) ? "special" : o >= 80 ? "gold" : o >= 70 ? "silver" : "bronze";
+const TIER_BG = { special: "#0f5f56", gold: "#e3bd4f", silver: "#c3ccd2", bronze: "#c98a52" };
+const ICON_TOWER = `<svg class="icon" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M18 6h28v52H18z" opacity=".25"/><path fill="none" stroke="currentColor" stroke-width="2.5" d="M18 58V6h28v52M12 58h40"/><g fill="currentColor">${[12, 20, 28, 36, 44].map(y => `<rect x="23" y="${y}" width="6" height="4"/><rect x="35" y="${y}" width="6" height="4"/>`).join("")}</g><path fill="currentColor" d="M28 50h8v8h-8z"/></svg>`;
+const ICON_ROW = `<svg class="icon" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" opacity=".25" d="M4 30 18 18l14 12 14-12 14 12v28H4z"/><path fill="none" stroke="currentColor" stroke-width="2.5" d="M4 30 18 18l14 12 14-12 14 12M8 27v31h48V27M2 58h60"/><g fill="currentColor"><rect x="12" y="34" width="6" height="6"/><rect x="26" y="44" width="7" height="14"/><rect x="41" y="34" width="6" height="6"/><rect x="14" y="46" width="6" height="12"/><rect x="44" y="46" width="6" height="12"/></g></svg>`;
+const ICON_HOUSE = `<svg class="icon" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" opacity=".25" d="M10 30 32 12l22 18v28H10z"/><path fill="none" stroke="currentColor" stroke-width="2.5" d="M6 32 32 10l26 22M12 28v30h40V28M2 58h60"/><g fill="currentColor"><rect x="18" y="34" width="8" height="8"/><rect x="38" y="34" width="8" height="8"/><rect x="28" y="44" width="8" height="14"/><rect x="42" y="14" width="5" height="10"/></g></svg>`;
+function shortName(a) { const m = String(a).match(/^\s*(\w+)\s*-\s*(.+)$/); return m ? `${m[2]} #${m[1]}` : a; }
+function futCard(l) {
+  const o = ovr(l), t = tierOf(l, o);
+  return `<button class="fut ${t}" data-u="${esc(l.url)}" aria-label="${esc(l.address)}, overall ${o}">
+    ${t === "special" ? '<span class="ribbon">VALUE PICK</span>' : ""}
+    <div class="head"><div><div class="ovr">${o}</div><div class="pos">${l.type === "Condo" ? "APT" : l.type === "Townhouse" ? "TH" : "HSE"}</div><span class="club">${CLUB[l.area] || l.area.slice(0, 3).toUpperCase()}</span></div>${l.type === "Condo" ? ICON_TOWER : l.type === "Townhouse" ? ICON_ROW : ICON_HOUSE}</div>
+    <div class="name">${esc(shortName(l.address))}</div>
+    <div class="stats">${ATTRS.map(([k]) => `<span><b>${l.attr[k]}</b>${k}</span>`).join("")}</div>
+    <div class="foot">${fmtK(l.price)} · ${esc(l.neighbourhood)}</div>
+  </button>`;
+}
+function radar(l, size = 220) {
+  const c = size / 2, R = size / 2 - 30, n = ATTRS.length;
+  const pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n, r = Math.max(0, (v - 35) / 64) * R; return [c + r * Math.cos(a), c + r * Math.sin(a)]; };
+  let g = "";
+  for (const v of [60, 80, 99]) g += `<polygon points="${ATTRS.map((_, i) => pt(i, v).join(",")).join(" ")}" fill="none" stroke="var(--line)"/>`;
+  ATTRS.forEach(([k, name], i) => { const [x, y] = pt(i, 99), [lx, ly] = pt(i, 116); g += `<line x1="${c}" y1="${c}" x2="${x}" y2="${y}" stroke="var(--line)"/><text x="${lx}" y="${ly + 4}" text-anchor="middle" style="font-weight:600;fill:var(--ink-2)">${k} ${l.attr[k]}</text>`; });
+  g += `<polygon points="${ATTRS.map(([k], i) => pt(i, l.attr[k]).join(",")).join(" ")}" fill="color-mix(in srgb, var(--accent) 30%, transparent)" stroke="var(--accent)" stroke-width="2"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="Attribute ratings">${g}</svg>`;
+}
+function renderWeights() {
+  $("#weights").innerHTML = ATTRS.map(([k, name]) => `<label for="w-${k}">${k} · ${name} <span class="mono" id="wv-${k}">${state.w[k]}</span><input type="range" id="w-${k}" min="0" max="10" step="1" value="${state.w[k]}" data-k="${k}"></label>`).join("");
+}
+$("#weights").addEventListener("input", e => { const k = e.target.dataset.k; if (!k) return; state.w[k] = +e.target.value; $("#wv-" + k).textContent = e.target.value; renderList(); });
+$("#futs").addEventListener("click", e => { const c = e.target.closest(".fut"); if (c) openListing(L.find(l => l.url === c.dataset.u)); });
+$("#futs-more").addEventListener("click", () => { state.futN += 12; renderList(); });
+function renderFuts(rows) {
+  $("#futs").innerHTML = rows.slice(0, state.futN).map(r => futCard(r.l)).join("") || `<div class="empty">No listings match the filters.</div>`;
+  $("#futs-more").hidden = rows.length <= state.futN;
+}
+
+/* ---------- Schools & walkability panels ---------- */
+function renderSchools() {
+  const by = {};
+  for (const l of L) { const e = l.school_elem; if (!e) continue; const k = e.name; (by[k] ||= { ...e, n: 0, catch: 0, listings: [] }); by[k].n++; if (e.src === "catchment") by[k].catch++; by[k].listings.push(l); }
+  const rows = Object.values(by).filter(s => s.n >= 2 && s.rating != null).sort((a, b) => b.rating - a.rating);
+  const rated = L.filter(l => l.school_elem?.rating != null);
+  $("#sch-sub").textContent = `${rows.length} schools serving 2+ listings`;
+  const wrap = $("#sch-wrap"), svg = $("#sch"), W = Math.max(300, wrap.clientWidth), narrow = W < 560, row = 22, m = { l: narrow ? 170 : 250, r: 40, t: 4, b: 24 }, H = m.t + m.b + rows.length * row;
+  const X = v => m.l + v / 10 * (W - m.l - m.r);
+  let g = "";
+  for (let v = 0; v <= 10; v += 2) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--line-2)"/><text x="${X(v)}" y="${H - 6}" text-anchor="middle">${v}</text>`;
+  rows.forEach((s, i) => {
+    const y = m.t + i * row + 4, h = row - 8;
+    const fill = s.rating >= 7 ? "var(--below)" : s.rating >= 4 ? "var(--ref)" : "var(--above)";
+    g += `<text class="lbl" x="${m.l - 8}" y="${y + h / 2 + 4}" text-anchor="end">${esc(s.name.replace(/ Elementary| Community| School/g, ""))}${s.french ? " · FR" : ""} <tspan style="fill:var(--ink-3);font-weight:400">${s.n}</tspan></text>`;
+    g += `<rect x="${m.l}" y="${y}" width="${Math.max(2, X(s.rating) - m.l)}" height="${h}" rx="3" fill="${fill}" data-k="${i}"/><text x="${X(s.rating) + 5}" y="${y + h / 2 + 4}" style="fill:var(--ink-2)">${s.rating.toFixed(1)}</text>`;
+  });
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.innerHTML = g; svg._rows = rows;
+  const top = rated.filter(l => l.school_elem.rating >= 7), fr = L.filter(l => l.school_elem?.french);
+  const cities = AREAS.map(a => [a, median(rated.filter(l => l.area === a).map(l => l.school_elem.rating))]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);
+  const best = rows.slice(0, 3).map(s => `${s.name} (${s.rating.toFixed(1)})`).join(", ");
+  const f = [
+    [`${top.length} listings have a 7/10+ school`, `That's ${Math.round(top.length / rated.length * 100)}% of rated listings. The highest-rated schools serving current listings: ${best}.`],
+    ["School quality by city", cities.map(([a, v]) => `${a} ${v.toFixed(1)}`).join(" · ") + " (median rating of the school serving each listing)."],
+    [`${fr.length} listings are near a French immersion school`, "Marked FR in the chart. Immersion places are usually assigned by district lottery, not by catchment, so confirm availability with the district."],
+    ["Read the rating with care", "FSA covers reading and numeracy in Grades 4 and 7. Many parents opt out, so participation is often 50–70%. Use the rating to rank schools against each other and visit the school before deciding."],
+  ];
+  $("#sch-find").innerHTML = f.map(([t, b]) => `<div class="finding"><b>${esc(t)}</b><p class="small muted">${esc(b)}</p></div>`).join("");
+}
+$("#sch").addEventListener("pointermove", e => { const r = e.target.closest("rect[data-k]"); if (!r) return hideTip("#sch-wrap"); const s = $("#sch")._rows[+r.dataset.k]; showTip("#sch-wrap", e, `<b>${esc(s.name)}</b><br>Rating <span class="mono">${s.rating.toFixed(1)}/10</span> · FSA avg <span class="mono">${s.fsa}</span><br>${s.meet != null ? `${s.meet}% on track or better<br>` : ""}${s.n} listings (${s.catch} confirmed catchment)${s.rated_as ? `<br>Rated by ${esc(s.rated_as)}` : ""}`); });
+$("#sch").addEventListener("pointerleave", () => hideTip("#sch-wrap"));
+
+function renderWalk() {
+  const by = {};
+  for (const l of L) (by[l.neighbourhood] ||= { area: l.area, v: [] }).v.push(l.walk);
+  const rows = Object.entries(by).filter(([n, o]) => o.v.length >= 4 && n !== o.area).map(([n, o]) => ({ n, area: o.area, med: median(o.v), cnt: o.v.length })).sort((a, b) => b.med - a.med);
+  {
+    const wrap = $("#walk-wrap"), svg = $("#walkc"), W = Math.max(280, wrap.clientWidth), row = 20, m = { l: 150, r: 34, t: 2, b: 22 }, H = m.t + m.b + rows.length * row;
+    const X = v => m.l + v / 100 * (W - m.l - m.r);
+    let g = "";
+    for (let v = 0; v <= 100; v += 25) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--line-2)"/><text x="${X(v)}" y="${H - 6}" text-anchor="middle">${v}</text>`;
+    rows.forEach((r, i) => { const y = m.t + i * row + 4; g += `<text class="lbl" x="${m.l - 8}" y="${y + 10}" text-anchor="end">${esc(r.n)}</text><rect x="${m.l}" y="${y}" width="${X(r.med) - m.l}" height="${row - 8}" rx="3" fill="var(--accent)"><title>${esc(r.n)}: ${Math.round(r.med)} (${r.cnt} listings)</title></rect><text x="${X(r.med) + 4}" y="${y + 10}">${Math.round(r.med)}</text>`; });
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.innerHTML = g;
+  }
+  {
+    const wrap = $("#wl-wrap"), svg = $("#wl"), W = Math.max(280, wrap.clientWidth), H = 300, m = { l: 44, r: 10, t: 10, b: 34 };
+    const X = v => m.l + v / 100 * (W - m.l - m.r), Y = v => H - m.b - (Math.max(-20, Math.min(20, v)) + 20) / 40 * (H - m.t - m.b);
+    let g = "";
+    for (let v = -20; v <= 20; v += 10) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? "var(--ink-3)" : "var(--line-2)"}"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${v > 0 ? "+" : ""}${v}%</text>`;
+    for (let v = 0; v <= 100; v += 25) g += `<text x="${X(v)}" y="${H - 16}" text-anchor="middle">${v}</text>`;
+    g += `<text x="${(m.l + W - m.r) / 2}" y="${H - 2}" text-anchor="middle">Walk score</text>`;
+    g += `<text x="${W - m.r - 4}" y="${m.t + 12}" text-anchor="end">Pricier location</text><text x="${W - m.r - 4}" y="${H - m.b - 6}" text-anchor="end">Cheaper location</text>`;
+    for (const l of L) g += `<circle cx="${X(l.walk).toFixed(1)}" cy="${Y(l.loc_prem).toFixed(1)}" r="4" fill="var(--${typeVar(l.type)})" fill-opacity=".8" stroke="var(--panel)" data-i="${L.indexOf(l)}" style="cursor:pointer"/>`;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.innerHTML = g;
+  }
+  const hi = L.filter(l => l.walk >= 90 && l.loc_prem < 0 && !isRestricted(l));
+  const f = [
+    ["Most walkable", rows.slice(0, 4).map(r => `${r.n} (${Math.round(r.med)})`).join(", ") + ". Groceries, cafes, parks and transit are all within a few minutes."],
+    ["Most car-dependent", rows.slice(-3).reverse().map(r => `${r.n} (${Math.round(r.med)})`).join(", ") + ". Quieter and greener, but most errands need a car."],
+    [`${hi.length} walkable homes in cheaper locations`, "Walk score 90+ in a neighbourhood that asks below average for its homes. These are the dots in the bottom-right of the chart, and the best spots for daily life on foot."],
+  ];
+  $("#walk-find").innerHTML = f.map(([t, b]) => `<div class="finding"><b>${esc(t)}</b><p class="small muted">${esc(b)}</p></div>`).join("");
+}
+$("#wl").addEventListener("pointermove", e => { const c = e.target.closest("circle[data-i]"); if (!c) return hideTip("#wl-wrap"); const l = L[+c.dataset.i]; showTip("#wl-wrap", e, listingTip(l) + `<br>Walk <span class="mono">${Math.round(l.walk)}</span> · Location <span class="mono">${pct(l.loc_prem)}</span>`); });
+$("#wl").addEventListener("pointerleave", () => hideTip("#wl-wrap"));
+$("#wl").addEventListener("click", e => { const c = e.target.closest("circle[data-i]"); if (c) openListing(L[+c.dataset.i]); });
+
+/* ---------- Interactive map ---------- */
+const mapEl = { wrap: $("#mapc-wrap"), cv: $("#mapc") };
+const mctx = mapEl.cv.getContext("2d");
+const mv = { s: 1, tx: 0, ty: 0, w: 0, h: 0, dpr: 1, sel: null };
+const KX = Math.cos(49.25 * Math.PI / 180);
+const toXY = (lon, lat) => [lon * KX * mv.s + mv.tx, -lat * mv.s + mv.ty];
+let tokCache = {};
+const tok = n => tokCache[n] ??= (getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888");
+const mapOpt = () => ({ color: $("#m-color").value, walk: $("#l-walk").checked, elem: $("#l-elem").checked, sec: $("#l-sec").checked, park: $("#l-park").checked, sky: $("#l-sky").checked });
+const rating3 = r => r == null ? tok("--ink-3") : r >= 7 ? tok("--below") : r >= 4 ? tok("--ref") : tok("--above");
+const WALK_STEPS = [[90, "#0b5d55"], [75, "#138a7e"], [60, "#4fb3a6"], [40, "#9fd6cd"], [0, "#dcefeb"]];
+const walkCol = v => WALK_STEPS.find(([t]) => v >= t)[1];
+function homeColor(l, mode) {
+  if (mode === "ovr") { const t = tierOf(l, ovr(l)); return TIER_BG[t]; }
+  if (mode === "gap") return l.gap <= -10 ? tok("--below") : l.gap <= -5 ? "color-mix" : l.gap < 5 ? tok("--ref") : tok("--above");
+  if (mode === "school") return rating3(l.school_elem?.rating);
+  if (mode === "walk") return walkCol(l.walk ?? 0);
+  return tok("--" + typeVar(l.type));
+}
+function mapLegend() {
+  const o = mapOpt(), parts = [];
+  if (o.color === "ovr") parts.push(`<span><i style="background:${TIER_BG.special}"></i>Value pick</span><span><i style="background:${TIER_BG.gold}"></i>Gold 80+</span><span><i style="background:${TIER_BG.silver}"></i>Silver 70–79</span><span><i style="background:${TIER_BG.bronze}"></i>Bronze</span>`);
+  if (o.color === "gap") parts.push(`<span><i style="background:var(--below)"></i>10%+ below model</span><span><i style="background:color-mix(in srgb, var(--below) 45%, var(--panel))"></i>5–10% below</span><span><i style="background:var(--ref)"></i>Within ±5%</span><span><i style="background:var(--above)"></i>5%+ above</span>`);
+  if (o.color === "school") parts.push(`<span><i style="background:var(--below)"></i>School 7+/10</span><span><i style="background:var(--ref)"></i>4–7</span><span><i style="background:var(--above)"></i>Under 4</span>`);
+  if (o.color === "walk") parts.push(WALK_STEPS.map(([t, c]) => `<span><i style="background:${c}"></i>${t === 0 ? "Under 40" : t + "+"}</span>`).join(""));
+  if (o.color === "type") parts.push(`<span><i style="background:var(--condo)"></i>Condo</span><span><i style="background:var(--town)"></i>Townhouse</span><span><i style="background:var(--house)"></i>House / duplex</span>`);
+  if (o.walk) parts.push(`<span><span class="lg-ramp" style="background:linear-gradient(90deg, rgba(14,124,112,.05), rgba(14,124,112,.55))"></span>Walkability heat (low → high)</span>`);
+  if (o.elem || o.sec) parts.push(`<span><span class="lg-sq" style="background:var(--below)"></span>School, coloured by rating (◆ secondary)</span>`);
+  $("#map-legend").innerHTML = parts.join("");
+}
+function fitMap(pad = 40) {
+  const pts = L.filter(l => l.lat != null && visible(l));
+  const use = pts.length ? pts : L.filter(l => l.lat != null);
+  const lons = use.map(l => l.lon * KX), lats = use.map(l => -l.lat);
+  const x0 = Math.min(...lons), x1 = Math.max(...lons), y0 = Math.min(...lats), y1 = Math.max(...lats);
+  mv.s = Math.min((mv.w - 2 * pad) / Math.max(x1 - x0, 1e-4), (mv.h - 2 * pad) / Math.max(y1 - y0, 1e-4));
+  mv.tx = mv.w / 2 - (x0 + x1) / 2 * mv.s; mv.ty = mv.h / 2 - (y0 + y1) / 2 * mv.s;
+}
+function resizeMap() {
+  const r = mapEl.wrap.getBoundingClientRect();
+  const first = !mv.w;
+  const cx = (mv.w / 2 - mv.tx), cy = (mv.h / 2 - mv.ty);
+  mv.w = r.width; mv.h = r.height; mv.dpr = window.devicePixelRatio || 1;
+  mapEl.cv.width = Math.round(mv.w * mv.dpr); mapEl.cv.height = Math.round(mv.h * mv.dpr);
+  if (first) fitMap(); else { mv.tx = mv.w / 2 - cx; mv.ty = mv.h / 2 - cy; }
+  drawMap();
+}
+let drawQueued = false;
+function drawMap() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(() => { drawQueued = false; paintMap(); }); } }
+function pathPoly(rings) { mctx.beginPath(); for (const ring of rings) ring.forEach(([lo, la], i) => { const [x, y] = toXY(lo, la); i ? mctx.lineTo(x, y) : mctx.moveTo(x, y); }); }
+function paintMap() {
+  if (!mv.w) return;
+  tokCache = {};
+  const o = mapOpt(), c = mctx, zoom = mv.s / 4000;
+  c.setTransform(mv.dpr, 0, 0, mv.dpr, 0, 0);
+  c.fillStyle = tok("--water"); c.fillRect(0, 0, mv.w, mv.h);
+  c.fillStyle = tok("--land");
+  for (const poly of MAP.land) { pathPoly(poly); c.fill("evenodd"); }
+  if (o.park) { c.fillStyle = tok("--park"); for (const ring of MAP.parks) { pathPoly([ring]); c.fill(); } }
+  if (o.walk) {
+    const g = MAP.walk_grid, cw = g.lon_step * KX * mv.s + .6, ch = g.lat_step * mv.s + .6;
+    for (const [lo, la, v] of g.cells) {
+      if (v < 15) continue;
+      const [x, y] = toXY(lo, la);
+      if (x < -cw || y < -ch || x > mv.w + cw || y > mv.h + ch) continue;
+      c.fillStyle = `rgba(14,124,112,${(Math.pow(v / 100, 1.6) * .55).toFixed(3)})`;
+      c.fillRect(x - cw / 2, y - ch / 2, cw, ch);
+    }
+  }
+  const roadStyles = [["secondary", tok("--road"), .9 + zoom * .8], ["primary", tok("--road"), 1.3 + zoom], ["trunk", tok("--road-major"), 1.8 + zoom], ["motorway", tok("--road-major"), 2.3 + zoom * 1.2]];
+  c.lineCap = "round"; c.lineJoin = "round";
+  for (const [cls, col, lw] of roadStyles) {
+    if (cls === "secondary" && zoom < .6) continue;
+    c.strokeStyle = col; c.lineWidth = lw; c.beginPath();
+    for (const line of MAP.roads[cls]) line.forEach(([lo, la], i) => { const [x, y] = toXY(lo, la); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+    c.stroke();
+  }
+  if (o.sky) {
+    c.strokeStyle = tok("--ink-2"); c.lineWidth = 3; c.globalAlpha = .55;
+    for (const line of LINES) { c.beginPath(); line.forEach((s, i) => { const [x, y] = toXY(ST[s][1], ST[s][0]); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); }
+    c.globalAlpha = 1;
+    for (const [name, [la, lo]] of Object.entries(ST)) {
+      const [x, y] = toXY(lo, la);
+      c.beginPath(); c.arc(x, y, 3.5, 0, 7); c.fillStyle = tok("--panel"); c.fill(); c.lineWidth = 2; c.strokeStyle = tok("--ink-2"); c.stroke();
+      if (zoom > 1.4 || KEY_STN.has(name) && zoom > .7) { c.font = `500 10px ${tok("--mono")}`; c.fillStyle = tok("--ink-2"); c.fillText(name, x + 6, y - 5); }
+    }
+  }
+  const sch = MAP.schools.filter(s => (s.level === "elem" ? o.elem : o.sec));
+  for (const s of sch) {
+    const [x, y] = toXY(s.lon, s.lat), r = 4.5 + Math.min(zoom, 2);
+    c.fillStyle = rating3(s.rating); c.strokeStyle = tok("--ink"); c.lineWidth = 1.5;
+    c.beginPath();
+    if (s.level === "sec") { c.moveTo(x, y - r - 1); c.lineTo(x + r + 1, y); c.lineTo(x, y + r + 1); c.lineTo(x - r - 1, y); c.closePath(); }
+    else c.rect(x - r, y - r, 2 * r, 2 * r);
+    c.fill(); c.stroke();
+    if (zoom > 1.8) { c.font = `600 10.5px ${tok("--body")}`; c.fillStyle = tok("--ink"); c.fillText(`${s.name.replace(/ Elementary| Community| School| Secondary/g, "")}${s.rating != null ? " " + s.rating.toFixed(1) : ""}`, x + r + 4, y + 4); }
+  }
+  const homes = L.filter(l => l.lat != null && visible(l));
+  const order = o.color === "ovr" ? (a, b) => ovr(a) - ovr(b) : o.color === "gap" ? (a, b) => b.gap - a.gap : o.color === "school" ? (a, b) => (a.school_elem?.rating ?? 0) - (b.school_elem?.rating ?? 0) : o.color === "walk" ? (a, b) => a.walk - b.walk : () => 0;
+  homes.sort(order);
+  const belowMix = `color-mix(in srgb, ${tok("--below")} 45%, ${tok("--panel")})`;
+  for (const l of homes) {
+    const [x, y] = toXY(l.lon, l.lat), r = 5 + Math.min(zoom * 1.2, 3), col = homeColor(l, o.color);
+    c.beginPath(); c.arc(x, y, r, 0, 7);
+    c.fillStyle = col === "color-mix" ? belowMix : col; c.fill();
+    c.lineWidth = 1.8; c.strokeStyle = tok("--panel"); c.stroke();
+    if (mv.sel && mv.sel.kind === "home" && mv.sel.item === l) { c.beginPath(); c.arc(x, y, r + 4, 0, 7); c.lineWidth = 2.5; c.strokeStyle = tok("--ink"); c.stroke(); }
+  }
+  if (mv.sel && mv.sel.kind === "school") { const [x, y] = toXY(mv.sel.item.lon, mv.sel.item.lat); c.beginPath(); c.arc(x, y, 12, 0, 7); c.lineWidth = 2.5; c.strokeStyle = tok("--ink"); c.stroke(); }
+  if (zoom < 1.6) {
+    c.font = `800 13px ${tok("--display")}`; c.fillStyle = tok("--ink-3"); c.textAlign = "center";
+    for (const [name, la, lo] of MAP_LABELS) { const [x, y] = toXY(lo, la); c.fillText(name.toUpperCase(), x, y); }
+    c.textAlign = "start";
+  }
+}
+function mapHit(px, py) {
+  const o = mapOpt();
+  let best = null, bd = 12;
+  for (const l of L) { if (l.lat == null || !visible(l)) continue; const [x, y] = toXY(l.lon, l.lat), d = Math.hypot(x - px, y - py); if (d < bd) { bd = d; best = { kind: "home", item: l }; } }
+  if (best) return best;
+  bd = 10;
+  for (const s of MAP.schools) { if (!(s.level === "elem" ? o.elem : o.sec)) continue; const [x, y] = toXY(s.lon, s.lat), d = Math.hypot(x - px, y - py); if (d < bd) { bd = d; best = { kind: "school", item: s }; } }
+  return best;
+}
+function schoolInfo(s) {
+  const near = L.filter(l => l.school_elem?.name === s.name || l.school_sec?.name === s.name);
+  return `<div class="eyebrow">${s.level === "sec" ? "Secondary school" : "Elementary school"}</div><h3>${esc(s.name)}</h3>
+    <div class="fact" style="padding:0"><span class="v num" style="color:${rating3(s.rating)}">${s.rating != null ? s.rating.toFixed(1) + "/10" : "No FSA rating"}</span><span class="l">${s.level === "sec" ? "FSA is written in Grades 4 and 7 only, so secondary schools aren't rated" : "Rating from Grade 4 and 7 FSA results, 2023–2026"}</span></div>
+    ${s.french ? '<span class="pill good">French immersion</span>' : ""}
+    <p class="small muted">${near.length} listing${near.length === 1 ? "" : "s"} use this school${near.length ? ":" : "."}</p>
+    ${near.slice(0, 8).map(l => `<button class="chip-btn" data-u="${esc(l.url)}" style="text-align:left">${esc(shortName(l.address))} · ${fmtK(l.price)}</button>`).join("")}`;
+}
+function homeInfo(l) {
+  const e = l.school_elem;
+  return `${futCard(l)}<h3>${esc(l.address)}</h3>
+    <dl class="kv"><dt>Asking</dt><dd class="mono">${fmt$(l.price)} (${pct(l.gap)} vs model)</dd><dt>Size</dt><dd>${l.sqft.toLocaleString()} sqft · ${l.beds} bed</dd>
+    <dt>School</dt><dd>${e ? `${esc(e.name)}${e.rating != null ? ` <b>${e.rating.toFixed(1)}/10</b>` : ""}<div class="sub">${e.src === "catchment" ? "Catchment" : "Nearest, catchment not confirmed"} · ${e.km ?? "?"} km</div>` : "—"}</dd>
+    <dt>Walk score</dt><dd class="mono">${Math.round(l.walk)}</dd><dt>SkyTrain</dt><dd>${esc(l.station)} <span class="muted mono">${l.station_km} km</span></dd>
+    <dt>Location</dt><dd>${l.loc_tier}</dd><dt>Built</dt><dd>${l.year ?? "Unknown"}${l.leaky_era ? ' <span class="pill warn">Leaky-condo era</span>' : ""}</dd></dl>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-open="${esc(l.url)}" type="button" style="border:0;cursor:pointer">Show in shortlist</button><a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener" style="background:var(--panel);color:var(--accent);border:1px solid var(--accent)">Open listing</a></div>`;
+}
+function selectOnMap(hit) {
+  mv.sel = hit;
+  $("#map-info").innerHTML = !hit ? `<p class="small muted">Tap a home or a school on the map to see its details here.</p>` : hit.kind === "home" ? homeInfo(hit.item) : schoolInfo(hit.item);
+  drawMap();
+}
+$("#map-info").addEventListener("click", e => {
+  const u = e.target.closest("[data-open]")?.dataset.open || e.target.closest(".chip-btn[data-u]")?.dataset.u;
+  if (u) { const l = L.find(x => x.url === u); if (e.target.closest(".chip-btn")) { selectOnMap({ kind: "home", item: l }); } else openListing(l); }
+  const f = e.target.closest(".fut"); if (f) openListing(L.find(x => x.url === f.dataset.u));
+});
+// Pan / zoom with mouse, touch and pinch.
+const ptrs = new Map(); let dragMoved = false, pinch0 = null;
+function zoomAt(px, py, k) { const s2 = Math.max(1500, Math.min(mv.s * k, 400000)); k = s2 / mv.s; mv.tx = px - (px - mv.tx) * k; mv.ty = py - (py - mv.ty) * k; mv.s = s2; drawMap(); }
+mapEl.cv.addEventListener("wheel", e => { e.preventDefault(); const r = mapEl.cv.getBoundingClientRect(); zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * .0015)); }, { passive: false });
+mapEl.cv.addEventListener("pointerdown", e => { mapEl.cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); dragMoved = false; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) }; } });
+mapEl.cv.addEventListener("pointermove", e => {
+  const r = mapEl.cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+  if (ptrs.has(e.pointerId)) {
+    const [ox, oy] = ptrs.get(e.pointerId);
+    if (ptrs.size === 2) {
+      ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+      const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      zoomAt((a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top, d / pinch0.d); pinch0.d = d; dragMoved = true; return;
+    }
+    if (Math.abs(e.clientX - ox) + Math.abs(e.clientY - oy) > 3 || dragMoved) { dragMoved = true; mapEl.wrap.classList.add("dragging"); mv.tx += e.clientX - ox; mv.ty += e.clientY - oy; ptrs.set(e.pointerId, [e.clientX, e.clientY]); hideTip("#mapc-wrap"); drawMap(); }
+    return;
+  }
+  const hit = mapHit(px, py);
+  mapEl.cv.style.cursor = hit ? "pointer" : "";
+  if (!hit) return hideTip("#mapc-wrap");
+  if (hit.kind === "home") showTip("#mapc-wrap", e, listingTip(hit.item) + `<br>OVR <b>${ovr(hit.item)}</b> · School ${hit.item.school_elem?.rating?.toFixed(1) ?? "—"} · Walk ${Math.round(hit.item.walk)}`);
+  else showTip("#mapc-wrap", e, `<b>${esc(hit.item.name)}</b><br>${hit.item.rating != null ? `Rating <span class="mono">${hit.item.rating.toFixed(1)}/10</span>` : "No FSA rating"}${hit.item.french ? "<br>French immersion" : ""}`);
+});
+const endPtr = e => {
+  const was = ptrs.has(e.pointerId); ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = null;
+  mapEl.wrap.classList.remove("dragging");
+  if (was && !dragMoved && e.type === "pointerup") { const r = mapEl.cv.getBoundingClientRect(); selectOnMap(mapHit(e.clientX - r.left, e.clientY - r.top)); }
+};
+mapEl.cv.addEventListener("pointerup", endPtr); mapEl.cv.addEventListener("pointercancel", endPtr);
+mapEl.cv.addEventListener("pointerleave", () => hideTip("#mapc-wrap"));
+$("#z-in").addEventListener("click", () => zoomAt(mv.w / 2, mv.h / 2, 1.5));
+$("#z-out").addEventListener("click", () => zoomAt(mv.w / 2, mv.h / 2, 1 / 1.5));
+$("#z-fit").addEventListener("click", () => { fitMap(); drawMap(); });
+for (const id of ["#m-color", "#l-walk", "#l-elem", "#l-sec", "#l-park", "#l-sky"]) $(id).addEventListener("input", () => { mapLegend(); drawMap(); });
+window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", drawMap);
+new MutationObserver(drawMap).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+/* ---------- Filters + monthly cost ---------- */
+const state = { max: 1500000, sch: "", walk: "", futN: 12, w: { VAL: 5, SPC: 3, SCH: 4, WLK: 3, LOC: 2, BLD: 3 }, loc: "", age: "", lux: "", areas: new Set(AREAS), type: "", sqft: 1000, clean: true, verified: false, sort: "ovr", down: 20, rate: 4.5, amort: 25, open: null };
+
+function monthly(l) {
+  const loan = l.price * (1 - state.down / 100);
+  const i = Math.pow(1 + state.rate / 200, 1 / 6) - 1; // Canadian fixed: semi-annual compounding
+  const n = state.amort * 12;
+  const mort = i > 0 ? loan * i / (1 - Math.pow(1 + i, -n)) : loan / n;
+  const m = medBy[l.area + l.type] || {};
+  // Freehold houses have no strata fee. Anything else missing is estimated from the city/type median;
+  // with no median either, the cost is left out and the total is marked partial (never counted as $0).
+  const freehold = l.type === "House" && !/strata/i.test(l.tenure || "");
+  const strata = freehold ? 0 : (l.strata ?? m.strata ?? null), taxes = l.taxes ?? m.taxes ?? null;
+  const partial = strata == null || taxes == null;
+  return { total: mort + (strata ?? 0) + (taxes ?? 0) / 12, mort, strata, tax: taxes == null ? null : taxes / 12, partial,
+           est: !partial && ((!freehold && l.strata == null) || l.taxes == null) };
+}
+
+function visible(l) {
+  return state.areas.has(l.area) && (!state.type || l.type === state.type) && l.price <= state.max && l.sqft >= state.sqft
+    && (!state.clean || !isRestricted(l)) && (!state.verified || l.verified)
+    && (!state.loc || (state.loc === "prime" ? l.loc_prem >= 3 : state.loc === "avg" ? l.loc_prem >= -3 : l.loc_prem < -3))
+    && (!state.age || (state.age === "noleaky" ? !l.leaky_era : l.year != null && l.year >= +state.age))
+    && (!state.lux || (l.lux != null && l.lux >= +state.lux))
+    && (!state.sch || (l.school_elem?.rating != null && l.school_elem.rating >= +state.sch))
+    && (!state.walk || (l.walk != null && l.walk >= +state.walk));
+}
+
+$("#f-area").innerHTML = AREAS.map(a => `<button class="chip-btn" aria-pressed="true" data-a="${esc(a)}">${esc(a)} <span class="mono small">${L.filter(l => l.area === a).length}</span></button>`).join("");
+$("#f-area").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const a = b.dataset.a;
+  state.areas.has(a) ? state.areas.delete(a) : state.areas.add(a);
+  b.setAttribute("aria-pressed", state.areas.has(a)); update();
+});
+const bind = (id, key, parse = v => v) => $(id).addEventListener("input", e => { const v = e.target.type === "checkbox" ? e.target.checked : parse(e.target.value); if (typeof v === "number" && isNaN(v)) return; state[key] = v; update(); });
+bind("#f-type", "type"); bind("#f-max", "max", Number); bind("#f-sqft", "sqft", Number); bind("#f-sort", "sort");
+bind("#f-sch", "sch"); bind("#f-walk", "walk"); bind("#f-loc", "loc"); bind("#f-age", "age"); bind("#f-lux", "lux"); bind("#f-clean", "clean"); bind("#f-verified", "verified"); bind("#a-down", "down", Number); bind("#a-rate", "rate", Number); bind("#a-amort", "amort", Number);
+
+/* ---------- Scatter ---------- */
+const svgNS = "http://www.w3.org/2000/svg";
+function renderScatter() {
+  const wrap = $("#scatter-wrap"), svg = $("#scatter");
+  const W = Math.max(320, wrap.clientWidth), H = W < 560 ? 320 : 400;
+  const m = { l: 58, r: 14, t: 12, b: 40 };
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  const xs = L.map(l => l.sqft), x0 = 600, x1 = Math.ceil(Math.min(Math.max(...xs), 2400) / 200) * 200;
+  const y0 = 300000, y1 = 1250000;
+  const X = v => m.l + (Math.min(Math.max(v, x0), x1) - x0) / (x1 - x0) * (W - m.l - m.r);
+  const Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
+  let g = "";
+  for (let v = 400000; v <= 1200000; v += 200000) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${fmtK(v)}</text>`;
+  const step = W < 560 ? 400 : 200;
+  for (let v = x0 + (x0 % step ? step - x0 % step : 0); v <= x1; v += step) g += `<line x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--line-2)"/><text x="${X(v)}" y="${H - m.b + 18}" text-anchor="middle">${v.toLocaleString()}</text>`;
+  g += `<text x="${(m.l + W - m.r) / 2}" y="${H - 4}" text-anchor="middle">Floor area, sqft</text>`;
+  const pts = [...L].sort((a, b) => visible(a) - visible(b));
+  for (const l of pts) {
+    const vis = visible(l), deal = l.gap <= -10;
+    const fill = vis ? `var(--${typeVar(l.type)})` : "var(--line)";
+    g += `<circle cx="${X(l.sqft).toFixed(1)}" cy="${Y(l.price).toFixed(1)}" r="${vis ? 4.5 : 3.5}" fill="${fill}" stroke="${vis && deal ? "var(--ink)" : "var(--panel)"}" stroke-width="${vis && deal ? 2 : 1.5}" data-i="${L.indexOf(l)}" style="cursor:pointer"/>`;
+  }
+  svg.innerHTML = g;
+}
+/* ---------- Shared hover + open helpers ---------- */
+function showTip(wrapSel, e, html) {
+  const wrap = $(wrapSel), tip = $(".tip", wrap), r = wrap.getBoundingClientRect();
+  tip.innerHTML = html; tip.hidden = false;
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  tip.style.left = Math.max(0, Math.min(x + 14, r.width - 270)) + "px"; tip.style.top = Math.max(y - 100, 0) + "px";
+}
+const hideTip = wrapSel => { $(".tip", $(wrapSel)).hidden = true; };
+const listingTip = l => `<b>${esc(l.address)}</b><br>${esc(l.neighbourhood)} · ${l.type}<br><span class="mono">${fmt$(l.price)} · ${l.sqft.toLocaleString()} sqft</span><br>Model value <span class="mono">${fmt$(l.fair)} (${pct(l.gap)})</span>`;
+function openListing(l) {
+  if (!visible(l)) { state.areas = new Set(AREAS); state.type = ""; state.max = 1300000; state.sqft = 0; state.clean = false; state.verified = false; state.loc = state.age = state.lux = state.sch = state.walk = ""; syncControls(); }
+  state.open = l.url; update();
+  requestAnimationFrame(() => document.querySelector(`tr.row[data-u="${CSS.escape(l.url)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+}
+for (const id of ["scatter"]) {
+  $("#" + id).addEventListener("pointermove", e => { const c = e.target.closest("circle[data-i]"); c ? showTip(`#${id}-wrap`, e, listingTip(L[+c.dataset.i])) : hideTip(`#${id}-wrap`); });
+  $("#" + id).addEventListener("pointerleave", () => hideTip(`#${id}-wrap`));
+  $("#" + id).addEventListener("click", e => { const c = e.target.closest("circle[data-i]"); if (c) openListing(L[+c.dataset.i]); });
+}
+function syncControls() {
+  $("#f-sch").value = state.sch; $("#f-walk").value = state.walk; $("#f-loc").value = state.loc; $("#f-age").value = state.age; $("#f-lux").value = state.lux;
+  $("#f-type").value = state.type; $("#f-max").value = state.max; $("#f-sqft").value = state.sqft; $("#f-clean").checked = state.clean; $("#f-verified").checked = state.verified;
+  document.querySelectorAll("#f-area button").forEach(b => b.setAttribute("aria-pressed", state.areas.has(b.dataset.a)));
+}
+
+/* ---------- Shortlist ---------- */
+function signals(l) {
+  const s = [];
+  if (l.cuts > 0) s.push(`<span class="pill good">Price cut ${pct(l.cut_pct)}</span>`);
+  if (l.dom != null && l.dom >= 60) s.push(`<span class="pill plain">${l.dom} days listed</span>`);
+  if (l.station_km <= 0.8) s.push(`<span class="pill plain">${esc(l.station)} ${Math.round(l.station_km * 1000)} m</span>`);
+  s.push(`<span class="pill plain">${l.loc_tier} location</span>`);
+  if (l.lux_tier) s.push(`<span class="pill plain">${l.lux_tier} finish</span>`);
+  if (l.leaky_era) s.push(`<span class="pill warn">Leaky-condo era (${l.year})</span>`);
+  if (l.hermes_rank) s.push(`<span class="pill good">Hermes shortlist #${l.hermes_rank}</span>`);
+  if (l.band === "comparison") s.push(`<span class="pill plain">Above $1.2M</span>`);
+  if (l.fact_level === "card") s.push(`<span class="pill plain">Card facts only</span>`);
+  else if (!l.verified) s.push(`<span class="pill plain">Details not verified</span>`);
+  for (const f of l.flags) if (FLAG_TEXT[f]) s.push(`<span class="pill warn">${FLAG_TEXT[f]}</span>`);
+  if (/Undivided/.test(l.tenure || "")) s.push(`<span class="pill warn">Undivided interest</span>`);
+  return s.join("");
+}
+function sparkline(h) {
+  if (!h || h.length < 2) return `<span class="small muted">Seen in one scan only</span>`;
+  const W = 220, H = 44, ps = h.map(d => d[1]), lo = Math.min(...ps), hi = Math.max(...ps), pad = (hi - lo) || hi * .02;
+  const X = i => 4 + i / (h.length - 1) * (W - 8), Y = p => H - 6 - (p - lo + pad * .1) / (hi - lo + pad * .2) * (H - 12);
+  const d = h.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("");
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Asking price history"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2"/><circle cx="${X(h.length - 1)}" cy="${Y(ps.at(-1))}" r="3.5" fill="var(--accent)"/></svg>
+    <div class="small muted mono">${dateLabel(h[0][0])} ${fmtK(h[0][1])} → ${dateLabel(h.at(-1)[0])} ${fmtK(h.at(-1)[1])}</div>`;
+}
+function detailRow(l, mc) {
+  const school = s => s ? `${esc(s.name)} <span class="muted mono">${s.km ?? "?"} km</span>${s.rating != null ? ` · <b>${s.rating.toFixed(1)}/10</b>` : ""}${s.french ? " · French immersion" : ""}<div class="sub">${s.src === "catchment" ? "Catchment school (from listing)" : "Nearest public school, catchment not confirmed"}${s.rated_as ? `, rated by ${esc(s.rated_as)}` : ""}</div>` : `<span class="muted">Not found</span>`;
+  const wd = l.walk_detail ? Object.entries(l.walk_detail).map(([k, v]) => `<div><span>${esc(k)}</span><em><i style="width:${v.score}%"></i></em><span class="mono">${v.score}</span></div>`).join("") : "";
+  return `<tr class="detail"><td colspan="10"><div class="detail-grid">
+    <div class="card-detail">${futCard(l)}${radar(l)}
+      <div style="display:grid;gap:8px;flex:1;min-width:220px"><span class="small muted">Walk score <b class="mono">${Math.round(l.walk)}</b>, by category</span><div class="walkbars">${wd}</div></div></div>
+    <dl class="kv"><dt>Neighbourhood</dt><dd>${esc(l.neighbourhood)}, ${esc(l.area)}</dd><dt>MLS®</dt><dd class="mono">${esc(l.mls || "—")}</dd>
+      <dt>Beds / baths</dt><dd>${l.beds} / ${l.baths ?? "—"}</dd><dt>Tenure</dt><dd>${esc(l.tenure || "Not captured")}</dd><dt>Parking</dt><dd>${l.parking ?? "—"}</dd>
+      <dt>SkyTrain</dt><dd>${esc(l.station)} <span class="muted mono">${l.station_km} km</span></dd></dl>
+    <dl class="kv"><dt>Elementary</dt><dd>${school(l.school_elem)}</dd><dt>Secondary</dt><dd>${school(l.school_sec)}</dd>
+      <dt>Mortgage</dt><dd class="mono">${fmt$(mc.mort)}/mo</dd><dt>Strata</dt><dd class="mono">${mc.strata == null ? "Not available" : fmt$(mc.strata) + "/mo" + (l.strata == null && mc.strata ? " est." : "")}</dd><dt>Tax</dt><dd class="mono">${mc.tax == null ? "Not available" : fmt$(mc.tax) + "/mo" + (l.taxes == null ? " est." : "")}</dd>
+      <dt>Down payment</dt><dd class="mono">${fmt$(l.price * state.down / 100)}</dd>
+      ${l.rent_city ? `<dt>Typical rent</dt><dd class="mono">${fmt$(l.rent_city)}/mo <span class="muted">(3-bed median, ${esc(l.area)}; owning costs ${mc.partial ? "at least " : ""}${pct((mc.total / l.rent_city - 1) * 100, 0)})</span></dd>` : ""}
+      <dt>Source</dt><dd>${esc(l.source)}${l.fact_level === "card" ? " · listing-card facts only" : ""}</dd></dl>
+      <div style="grid-column:1/-1;display:grid;gap:6px"><span class="small muted">Monthly cost ${fmt$(mc.total)}</span>
+        <div class="stack">${[[mc.mort, "var(--accent)"], [mc.strata || 0, "var(--s5)"], [mc.tax || 0, "var(--s2)"]].map(([v, c]) => `<div style="flex:${v};background:${c}"></div>`).join("")}</div>
+        <div class="stack-key"><span><i style="background:var(--accent)"></i>Mortgage ${fmt$(mc.mort)}</span><span><i style="background:var(--s5)"></i>Strata ${mc.strata == null ? "not available" : fmt$(mc.strata)}</span><span><i style="background:var(--s2)"></i>Tax ${mc.tax == null ? "not available" : fmt$(mc.tax)}</span></div></div>
+    <dl class="kv"><dt>Location</dt><dd>${l.loc_tier} <span class="muted mono">${pct(l.loc_prem)}</span></dd>
+      <dt>Built</dt><dd>${l.year ?? "Unknown"}${l.year_source && l.year_source !== "listing" ? ` <span class="muted">(${l.year_source})</span>` : ""}${l.leaky_era ? ` <span class="pill warn">Leaky-condo era</span>` : ""}</dd>
+      <dt>Finish</dt><dd>${l.lux_tier ? `${l.lux_tier} <span class="muted mono">${l.lux.toFixed(1)}/10</span>` : "Not scored"}</dd>
+      ${l.lux_hits && l.lux_hits.length ? `<dt>Features</dt><dd class="small">${l.lux_hits.map(esc).join(", ")}</dd>` : ""}
+      ${l.assessed ? `<dt>Assessed 2026</dt><dd class="mono">${fmt$(l.assessed)} <span class="muted">(asks ${pct((l.price / l.assessed - 1) * 100, 0)})</span></dd>` : ""}</dl>
+    <div style="display:grid;gap:10px;align-content:start"><span class="small muted">Asking price across our scans</span>${sparkline(l.history)}
+      <div><a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener">Open listing</a></div></div>
+  </div></td></tr>`;
+}
+function renderList() {
+  const rows = L.filter(visible).map(l => ({ l, mc: monthly(l) }));
+  const key = { ovr: r => -ovr(r.l), school: r => -(r.l.school_elem?.rating ?? -1), walk: r => -(r.l.walk ?? 0), gap: r => r.l.gap, monthly: r => r.mc.total, psf: r => r.l.psf, sqft: r => -r.l.sqft, station: r => r.l.station_km, newest: r => -(r.l.year ?? 0) }[state.sort];
+  rows.sort((a, b) => key(a) - key(b));
+  const deals = rows.filter(r => r.l.gap <= -10).length;
+  renderFuts(rows);
+  $("#count").textContent = `${rows.length} of ${L.length} listings match · ${deals} ask 10%+ below model value`;
+  const span = 30;
+  $("#list tbody").innerHTML = rows.length ? rows.map(({ l, mc }) => {
+    const open = state.open === l.url;
+    const o = ovr(l);
+    return `<tr class="row${open ? " open" : ""}" data-u="${esc(l.url)}" tabindex="0" aria-expanded="${open}">
+      <td><span class="ovr-pill" style="background:${TIER_BG[tierOf(l, o)]};${tierOf(l, o) === "special" ? "color:#86f5e2" : ""}">${o}</span></td>
+      <td><div class="addr"><span class="type-dot" style="background:var(--${typeVar(l.type)})"></span>${esc(l.address)}</div><div class="sub">${esc(l.neighbourhood)} · ${l.type}${l.school_elem?.rating != null ? ` · School ${l.school_elem.rating.toFixed(1)}/10` : ""} · Walk ${Math.round(l.walk)}</div></td>
+      <td class="n">${fmt$(l.price)}</td><td class="n hide-sm">${fmt$(l.fair)}</td>
+      <td class="n"><div class="dbar-cell"><span class="gap-v" style="color:${l.gap <= -10 ? "var(--below)" : "inherit"}">${pct(l.gap)}</span><span class="hide-sm">${dbar(-l.gap, span)}</span></div></td>
+      <td class="n">${l.sqft.toLocaleString()}</td><td class="n hide-sm">${fmt$(l.psf)}</td><td class="n hide-sm">${l.year ?? "—"}</td>
+      <td class="n">${fmt$(mc.total)}${mc.partial ? '<div class="sub">partial</div>' : mc.est ? '<div class="sub">est.</div>' : ""}</td><td class="hide-sm">${signals(l)}</td></tr>` + (open ? detailRow(l, mc) : "");
+  }).join("") : `<tr><td colspan="10" class="empty">No listings match. Widen the price, size or area filters.</td></tr>`;
+}
+function toggleRow(tr) { const u = tr.dataset.u; state.open = state.open === u ? null : u; renderList(); }
+$("#list tbody").addEventListener("click", e => { if (e.target.closest("a")) return; const tr = e.target.closest("tr.row"); if (tr) toggleRow(tr); });
+$("#list tbody").addEventListener("keydown", e => { const tr = e.target.closest("tr.row"); if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleRow(tr); } });
+
+/* ---------- Notes ---------- */
+function renderNotes() {
+  const x = DATA.exit_stats || {};
+  const notes = [
+    ["These are asking prices, not sale prices", "A listing that asks less than the model can still be priced right if the model missed something: a unit facing the highway, a special levy, a building with envelope problems. Treat a big gap as a reason to look closer, then ask your realtor for sold prices in the same building from the last 6 months before making an offer."],
+    ["The model is a rough ruler", `It explains about ${Math.round(DATA.model.r2 * 100)}% of the price differences between listings, and a typical listing lands within ±${Math.round(DATA.model.sigma_pct)}% of its estimate. It can't see views, floor level, renovations or building condition. A gap under 10% is within normal noise.`],
+    ["Many listings have partial details", `Only ${L.filter(l => l.verified).length} of ${L.length} listings had their full detail page read, with year built, strata fee, tax, parking and school catchment. For the rest, the page estimates those from similar listings and marks them “Details not verified”.`],
+    ["Where the listings come from", (() => { const s = DATA.sources, c = s.inventory_coverage; const gaps = c ? Object.entries(c.cities).filter(([, v]) => !v.complete || v.pages >= 25).map(([k, v]) => v.pages ? `${k} (stopped at ${v.pages} pages)` : `${k} (not reached yet)`) : [];
+      return `The canonical Hermes database (read-only): ${s.research_listings} homes from its ${dateLabel(s.research_date)} 3-bed research, which verifies facts on the listing page and covers Vancouver and Port Moody in depth. Another ${s.inventory_listings} come from Hermes's all-cities inventory (listing-card facts only), which adds Burnaby, Coquitlam and detached houses.${gaps.length ? " Inventory gaps: " + gaps.join(", ") + "." : ""} New Westminster and Port Coquitlam are therefore thin in this version.`; })()],
+    ["Scan coverage has changed over time", `Scans from ${dateLabel(DATA.first_scan)} to Aug 8 tracked 2-bed condos in Metrotown and Port Moody. From Aug 10 on, they tracked 3-bed homes in more cities, but ran only every week or two. Price-cut counts cover only the scans that saw each listing, so they undercount.`],
+    ["Next steps to make it sharper", "1) Connect the realtor MLS email feed in vancouver-re-intel to get real sold prices and days on market. 2) Add the September benchmark report when it's published. 3) Add BC Assessment values outside Vancouver to compare asking prices with assessed values. 4) Add detached houses if they fit the budget."],
+    ["Where the school and walk data comes from", "School locations and FSA results come from the BC Data Catalogue (Open Government Licence – BC). Walkability uses OpenStreetMap data (© OpenStreetMap contributors, ODbL), which can miss some shops and services. The school rating is our own ranking of FSA results, not the Fraser Institute's. Confirm catchment boundaries with the Burnaby, New Westminster, Vancouver or SD43 school district."],
+    ["How to refresh this page", "Run python3 analysis/market_analysis.py and then python3 analysis/build_dashboard.py in real_estate_research after each new scan."],
+  ];
+  $("#notes-body").innerHTML = notes.map(([t, b]) => `<div><h3>${t}</h3><p class="small muted">${esc(b)}</p></div>`).join("");
+}
+
+function update() { renderScatter(); drawMap(); renderList(); }
+renderWeights(); mapLegend(); resizeMap(); renderFacts(); renderFindings(); renderGvr(); renderAsks(); renderStrip(); renderNotes(); update();
+renderLoc(); renderLocFindings(); renderAge(); renderLux(); renderSchools(); renderWalk();
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { renderScatter(); resizeMap(); renderPath(); renderBars(); renderStrip(); renderLoc(); renderAge(); renderLux(); renderSchools(); renderWalk(); }, 120); });
+</script>

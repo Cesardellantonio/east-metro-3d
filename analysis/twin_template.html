@@ -1,0 +1,527 @@
+<title>East Metro Twin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper: #f4f6f5; --panel: rgba(255, 255, 255, .94); --panel-solid: #ffffff; --ink: #142120; --ink-2: #4c5b59; --ink-3: #75817f;
+  --line: #d8dfdd; --line-2: #e8edeb; --accent: #0e6a62; --accent-soft: #dcefeb; --below: #0e7c70; --above: #c2413b; --ref: #8a9593;
+  --warn-bg: #fdf1d8; --warn-ink: #7a4b00; --shadow: 0 2px 6px rgba(20, 33, 32, .08), 0 12px 32px rgba(20, 33, 32, .12);
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif; --body: "Public Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --paper: #121817; --panel: rgba(26, 33, 32, .93); --panel-solid: #1a2120; --ink: #eef3f2; --ink-2: #b3bfbd; --ink-3: #8a9795; --line: #2f3a38; --line-2: #243030; --accent: #5cc4b7; --accent-soft: #1d3633; --below: #4fc0b2; --above: #ec7b74; --ref: #7d8987; --warn-bg: #3a2e14; --warn-ink: #f2c46b; --shadow: 0 2px 10px rgba(0, 0, 0, .4); }
+}
+:root[data-theme="dark"] { color-scheme: dark; --paper: #121817; --panel: rgba(26, 33, 32, .93); --panel-solid: #1a2120; --ink: #eef3f2; --ink-2: #b3bfbd; --ink-3: #8a9795; --line: #2f3a38; --line-2: #243030; --accent: #5cc4b7; --accent-soft: #1d3633; --below: #4fc0b2; --above: #ec7b74; --ref: #7d8987; --warn-bg: #3a2e14; --warn-ink: #f2c46b; --shadow: 0 2px 10px rgba(0, 0, 0, .4); }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 14px/1.45 var(--body); overflow: hidden; }
+* { box-sizing: border-box; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.panel { position: absolute; background: var(--panel); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+header.bar { top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; padding: 10px 14px; }
+header.bar h1 { margin: 0; font: 800 22px/1 var(--display); font-stretch: 78%; letter-spacing: -.01em; }
+header.bar .sub { font-size: 12.5px; color: var(--ink-2); }
+header.bar .views { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.chip { font: 500 12.5px var(--body); padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-solid); color: var(--ink-2); cursor: pointer; }
+.chip:hover { border-color: var(--accent); color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel-solid); }
+#controls { top: calc(84px + env(safe-area-inset-top, 0px)); left: 12px; width: 268px; max-height: calc(100% - 110px); overflow-y: auto; padding: 14px; display: grid; gap: 14px; }
+#info { top: calc(84px + env(safe-area-inset-top, 0px)); right: 12px; width: 300px; max-height: calc(100% - 110px); overflow-y: auto; padding: 14px; display: grid; gap: 10px; }
+.lab { font: 500 11px var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+.grp { display: grid; gap: 6px; }
+select, input[type=number] { font: 500 13.5px var(--body); color: var(--ink); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 100%; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 15px; height: 15px; }
+.legend { display: grid; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: flex; align-items: center; gap: 7px; }
+.legend i { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.top-list { display: grid; gap: 4px; }
+.top-list button { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: center; text-align: left; font: inherit; font-size: 12.5px; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 5px 6px; cursor: pointer; }
+.top-list button:hover { background: var(--line-2); }
+.badge { display: inline-grid; place-items: center; height: 22px; min-width: 30px; border-radius: 5px; font: 800 13px var(--display); color: #2a1d05; }
+h2 { margin: 0; font: 800 18px/1.15 var(--display); font-stretch: 85%; text-wrap: balance; }
+.sub2 { font-size: 12.5px; color: var(--ink-3); }
+.attrs { display: grid; gap: 5px; }
+.attrs div { display: grid; grid-template-columns: 36px 1fr 28px; gap: 8px; align-items: center; font: 600 12px var(--display); letter-spacing: .04em; }
+.attrs em { display: block; height: 7px; border-radius: 4px; background: var(--line-2); overflow: hidden; }
+.attrs em i { display: block; height: 100%; background: var(--accent); }
+dl.kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font-size: 13px; }
+dl.kv dt { color: var(--ink-3); } dl.kv dd { margin: 0; }
+.btn { display: inline-block; font: 600 13px var(--body); padding: 7px 12px; border-radius: 8px; background: var(--accent); color: var(--panel-solid); text-decoration: none; border: 0; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-ink); margin: 1px 2px 1px 0; }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--paper); padding: 7px 10px; border-radius: 8px; font-size: 12.5px; max-width: 260px; z-index: 5; }
+#loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--paper); z-index: 10; }
+#loading div { display: grid; gap: 10px; justify-items: center; font-size: 14px; color: var(--ink-2); }
+#loading .bar { width: 220px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+#loading .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.hint { position: absolute; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 6px 12px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.toggle-panels { display: none; }
+@media (max-width: 820px) {
+  #controls, #info { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: 12px; right: 12px; width: auto; max-height: 46%; }
+  #controls[hidden], #info[hidden] { display: none; }
+  .toggle-panels { display: inline-flex; gap: 4px; }
+  header.bar .views { margin-left: 0; flex-wrap: nowrap; overflow-x: auto; width: 100%; padding-bottom: 2px; }
+  header.bar .views .chip { flex: none; }
+  header.bar .sub { font-size: 11.5px; }
+  .hint { display: none; }
+}
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div id="stage"></div>
+<div id="loading"><div><b style="font: 800 20px var(--display)">East Metro Twin</b><span id="load-msg">Loading the city…</span><span class="bar"><i id="load-bar"></i></span></div></div>
+
+<header class="panel bar">
+  <div><h1>East Metro Twin</h1><div class="sub" id="scan"></div></div>
+  <div class="views" id="views" role="group" aria-label="Camera views"></div>
+  <div class="toggle-panels"><button class="chip" id="t-controls" type="button">Layers</button><button class="chip" id="t-info" type="button">Details</button></div>
+</header>
+
+<aside class="panel" id="controls" aria-label="Layers and filters">
+  <div class="grp"><label class="lab" for="c-color">Colour homes by</label>
+    <select id="c-color"><option value="ovr">Overall rating</option><option value="gap">Price vs model value</option><option value="school">School rating</option><option value="walk">Walk score</option><option value="loc">Location premium</option><option value="age">Building age</option></select></div>
+  <div class="grp"><label class="lab" for="c-height">Pillar height</label>
+    <select id="c-height"><option value="price">Asking price</option><option value="ovr">Overall rating</option><option value="psf">Price per sqft</option><option value="flat">Same height</option></select></div>
+  <div class="grp"><label class="lab" for="c-ex">Terrain height</label>
+    <select id="c-ex"><option value="1">True scale</option><option value="1.5">1.5× exaggerated</option><option value="2.5">2.5× exaggerated</option><option value="0">Flat</option></select></div>
+  <div class="legend" id="legend"></div>
+  <div class="grp"><span class="lab">Layers</span>
+    <label class="check"><input type="checkbox" id="l-bld" checked> 3D buildings</label>
+    <label class="check"><input type="checkbox" id="l-walk" checked> Walkability heat</label>
+    <label class="check"><input type="checkbox" id="l-sch" checked> Schools</label>
+    <label class="check"><input type="checkbox" id="l-sky" checked> SkyTrain</label>
+    <label class="check"><input type="checkbox" id="l-lbl" checked> Labels</label>
+    <label class="check"><input type="checkbox" id="l-ter" checked> Terrain and mountains</label></div>
+  <div class="grp"><span class="lab">Filters</span>
+    <select id="f-type" aria-label="Type"><option value="">All types</option><option>Condo</option><option>Townhouse</option><option value="House">House / duplex</option></select>
+    <label class="sub2" for="f-max">Max asking price</label><input type="number" id="f-max" value="1500000" step="25000" min="300000">
+    <label class="check"><input type="checkbox" id="f-clean" checked> Hide leasehold, presale, den-as-bedroom</label></div>
+  <div class="grp"><span class="lab" id="top-title">Top 10</span><div class="top-list" id="top"></div></div>
+</aside>
+
+<aside class="panel" id="info" aria-live="polite"></aside>
+<div class="panel hint">Drag to pan · right-drag or two fingers to tilt and rotate · scroll to zoom · tap a pillar or school</div>
+<div id="tip" hidden></div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { MapControls } from "three/addons/controls/MapControls.js";
+
+const DASHBOARD = "https://claude.ai/artifact/SZSfz3J35ByoZzYaTyFApA";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt$ = v => v == null ? "—" : "$" + Math.round(v).toLocaleString("en-CA");
+const fmtK = v => v == null ? "—" : v >= 999500 ? "$" + (v / 1e6).toFixed(2) + "M" : "$" + Math.round(v / 1000) + "K";
+const pct = (v, d = 1) => v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d) + "%";
+const progress = (f, msg) => { $("#load-bar").style.width = Math.round(f * 100) + "%"; if (msg) $("#load-msg").textContent = msg; };
+
+/* ---------- Load assets ---------- */
+function webglOK() { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { return false; } }
+if (!webglOK()) { $("#load-msg").textContent = "This device can't show 3D graphics (WebGL is off). Open the dashboard for the 2D map instead."; throw new Error("no webgl"); }
+progress(.1, "Loading listings and analysis…");
+const DATA = await (await fetch("twin_data.json")).json();
+progress(.3, "Loading 15,000 buildings…");
+const BIN = (() => { return fetch("buildings.json").then(r => r.json()).then(j => { const s = atob(j.b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return new DataView(a.buffer); }); })();
+const BINV = await BIN;
+progress(.55, "Loading the ground map…");
+const texLoader = new THREE.TextureLoader();
+const [groundTex, walkTex, terrTex] = await Promise.all(["ground.png", "walk.png", "terrain.png"].map(u => texLoader.loadAsync(u)));
+progress(.75, "Building the city…");
+
+const L = DATA.listings, WORLD = DATA.world;
+$("#scan").textContent = `${L.length} listings from the ${new Date(DATA.latest_scan + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })} scan · ${DATA.schools.length} schools · ${BINV.getUint32(0, true).toLocaleString()} 3D buildings`;
+
+/* ---------- Ratings (same as the dashboard's scorecards, default weights) ---------- */
+const HARD = new Set(["leasehold", "resale not established", "third-bedroom integrity conflict", "adult oriented"]);
+const restricted = l => (l.flags || []).some(f => HARD.has(f)) || /Leasehold|Undivided/.test(l.tenure || "");
+const rankPct = vals => { const s = [...vals].sort((a, b) => a - b); return v => s.length > 1 ? s.filter(x => x < v).length / (s.length - 1) : .5; };
+const sqftPct = rankPct(L.map(l => l.sqft)), locPct = rankPct(L.map(l => l.loc_prem));
+const clampR = v => Math.round(Math.max(35, Math.min(99, v)));
+const W = { VAL: 5, SPC: 3, SCH: 4, WLK: 3, LOC: 2, BLD: 3 };
+for (const l of L) {
+  const age = l.year != null ? 2026 - l.year : null;
+  let bld = age != null ? Math.max(0, Math.min(100, 100 - age * 1.6)) : 50;
+  if (l.lux != null) bld = .6 * bld + .4 * l.lux * 10;
+  if (l.leaky_era) bld -= 12;
+  l.attr = { VAL: clampR(70 - l.gap * 1.5), SPC: clampR(45 + 54 * sqftPct(l.sqft)), SCH: clampR(40 + .59 * (l.school_score ?? 50)),
+             WLK: clampR(40 + .59 * (l.walk ?? 50)), LOC: clampR(45 + 54 * locPct(l.loc_prem)), BLD: clampR(40 + .59 * bld) };
+  const tw = Object.values(W).reduce((a, b) => a + b, 0);
+  l.ovr = Math.round(Object.entries(W).reduce((s, [k, w]) => s + w * l.attr[k], 0) / tw);
+  l.tier = !restricted(l) && l.gap <= -15 ? "special" : l.ovr >= 80 ? "gold" : l.ovr >= 70 ? "silver" : "bronze";
+}
+const TIER = { special: "#0f7a6e", gold: "#e3b43c", silver: "#b9c3ca", bronze: "#c98a52" };
+
+/* ---------- Scene ---------- */
+const stage = $("#stage");
+const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const SKY = new THREE.Color("#dfe9ec");
+scene.background = SKY;
+scene.fog = new THREE.Fog(SKY, 60000, 160000);
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 5, 150000);
+const controls = new MapControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .08; controls.maxPolarAngle = Math.PI * .47; controls.minDistance = 150; controls.maxDistance = 60000;
+controls.screenSpacePanning = false;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xb8c4c0, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(-8000, 14000, 6000); scene.add(sun);
+
+// Water and ground
+const water = new THREE.Mesh(new THREE.PlaneGeometry(400000, 400000), new THREE.MeshBasicMaterial({ color: "#b2cdd6" }));
+water.rotation.x = -Math.PI / 2; water.position.y = -80; scene.add(water);
+/* ---------- Terrain (NRCan CDEM / SRTM via AWS terrain tiles) ---------- */
+const T = DATA.terrain;
+const HGT = (() => {
+  const img = terrTex.image, c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+  const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0);
+  const d = x.getImageData(0, 0, img.width, img.height).data, out = new Float32Array(img.width * img.height);
+  for (let i = 0; i < out.length; i++) out[i] = (d[i * 4] * 256 + d[i * 4 + 1]) / 10 - 50;
+  return out;
+})();
+let EX = 1;  // vertical exaggeration
+function rawHeight(x, z) {
+  const fx = (x - T.x0) / (T.x1 - T.x0) * (T.nx - 1), fz = (z - T.z0) / (T.z1 - T.z0) * (T.nz - 1);
+  if (fx < 0 || fz < 0 || fx > T.nx - 1 || fz > T.nz - 1) return 0;
+  const i = Math.min(Math.floor(fx), T.nx - 2), j = Math.min(Math.floor(fz), T.nz - 2), u = fx - i, v = fz - j;
+  const h = HGT[j * T.nx + i] * (1 - u) * (1 - v) + HGT[j * T.nx + i + 1] * u * (1 - v) + HGT[(j + 1) * T.nx + i] * (1 - u) * v + HGT[(j + 1) * T.nx + i + 1] * u * v;
+  return Math.max(0, h);
+}
+const ground = (x, z) => rawHeight(x, z) * EX;
+groundTex.colorSpace = THREE.SRGBColorSpace; groundTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+walkTex.colorSpace = THREE.SRGBColorSpace;
+const terrGeo = new THREE.PlaneGeometry(T.x1 - T.x0, T.z1 - T.z0, T.nx - 1, T.nz - 1);
+terrGeo.rotateX(-Math.PI / 2); terrGeo.translate((T.x0 + T.x1) / 2, 0, (T.z0 + T.z1) / 2);
+{
+  const P = terrGeo.attributes.position, uv = terrGeo.attributes.uv, col = new Float32Array(P.count * 3), elev = new Float32Array(P.count), c = new THREE.Color();
+  const RAMP = [[0, "#b2cdd6"], [1, "#d6dccb"], [120, "#bfcfae"], [400, "#9fb68f"], [800, "#7f9674"], [1200, "#9a9a8e"], [1500, "#d9d9d3"]];
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), z = P.getZ(i), h = HGT[i];  // PlaneGeometry vertex order matches the heightmap (north row first)
+    const u = (x - T.bbox_x0) / (T.bbox_x1 - T.bbox_x0), v = 1 - (z - T.bbox_z0) / (T.bbox_z1 - T.bbox_z0);
+    uv.setXY(i, u, v);
+    elev[i] = Math.max(0, h);
+    { let k = RAMP.length - 1; while (k > 0 && h < RAMP[k][0]) k--; const [h0, c0] = RAMP[k], nxt = RAMP[Math.min(k + 1, RAMP.length - 1)]; c.set(c0); if (nxt[0] > h0) c.lerp(new THREE.Color(nxt[1]), Math.min(1, Math.max(0, (h - h0) / (nxt[0] - h0)))); if (h <= 0.5) c.set("#b2cdd6"); }
+    col.set([c.r, c.g, c.b], i * 3);
+  }
+  terrGeo.setAttribute("rampColor", new THREE.BufferAttribute(col, 3));
+  terrGeo.setAttribute("elev", new THREE.BufferAttribute(elev, 1));
+}
+function applyTerrainHeights() {
+  const P = terrGeo.attributes.position;
+  for (let i = 0; i < P.count; i++) P.setY(i, Math.max(0, HGT[i]) * EX);
+  P.needsUpdate = true; terrGeo.computeVertexNormals();
+}
+applyTerrainHeights();
+const terrUniforms = { walkMap: { value: walkTex }, walkOn: { value: 1 } };
+// Inside the study area the street map is draped on the terrain and fades into natural colours on high ground
+// (forested slopes, peaks); outside it the terrain is coloured by elevation only.
+const terrMat = new THREE.MeshLambertMaterial({ map: groundTex });
+terrMat.onBeforeCompile = sh => {
+  Object.assign(sh.uniforms, terrUniforms);
+  sh.vertexShader = "attribute vec3 rampColor; attribute float elev; varying vec3 vRamp; varying float vElev;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\n vRamp = rampColor; vElev = elev;");
+  sh.fragmentShader = "uniform sampler2D walkMap; uniform float walkOn; varying vec3 vRamp; varying float vElev;\n" + sh.fragmentShader.replace("#include <map_fragment>", `
+    #ifdef USE_MAP
+      bool inside = all(greaterThanEqual(vMapUv, vec2(0.0))) && all(lessThanEqual(vMapUv, vec2(1.0)));
+      vec3 ramp = pow(vRamp, vec3(2.2));
+      if (inside) {
+        vec4 g = texture2D(map, vMapUv);
+        vec4 w = texture2D(walkMap, vMapUv);
+        g.rgb = mix(g.rgb, w.rgb, w.a * 0.6 * walkOn);
+        diffuseColor.rgb *= mix(g.rgb, ramp, smoothstep(140.0, 420.0, vElev));
+      } else {
+        diffuseColor.rgb *= ramp;
+      }
+    #endif`);
+};
+const terrain = new THREE.Mesh(terrGeo, terrMat); scene.add(terrain);
+const walkLayer = { get visible() { return terrUniforms.walkOn.value > 0; }, set visible(v) { terrUniforms.walkOn.value = v ? 1 : 0; } };
+
+// Buildings: walls + roofs merged into one mesh, darker at the base for depth.
+function buildCity() {
+  // Each building sits on the terrain: walls start at the lowest ground under its corners, roof height is above its centre.
+  const n = BINV.getUint32(0, true);
+  let off = 4;
+  const pos = [], col = [];
+  const cBase = new THREE.Color("#b9bdb9"), cTop = new THREE.Color("#fbfbf8"), cTall = new THREE.Color("#e9eef0"), tmp = new THREE.Color();
+  for (let b = 0; b < n; b++) {
+    const k = BINV.getUint16(off, true), h = BINV.getUint16(off + 2, true) / 10; off += 4;
+    const pts = [];
+    for (let i = 0; i < k; i++) { pts.push(new THREE.Vector2(BINV.getInt16(off, true), BINV.getInt16(off + 2, true))); off += 4; }
+    const roof = tmp.copy(cTop).lerp(cTall, Math.min(h / 120, 1));
+    let base = Infinity, cx = 0, cz = 0;
+    for (const p of pts) { base = Math.min(base, ground(p.x, p.y)); cx += p.x / k; cz += p.y / k; }
+    base -= 1; const top = ground(cx, cz) + h;
+    for (let i = 0; i < k; i++) {
+      const a = pts[i], c = pts[(i + 1) % k];
+      pos.push(a.x, base, a.y, c.x, base, c.y, c.x, top, c.y, a.x, base, a.y, c.x, top, c.y, a.x, top, a.y);
+      for (const top of [0, 0, 1, 0, 1, 1]) { const cc = top ? roof : cBase; col.push(cc.r, cc.g, cc.b); }
+    }
+    let tris;
+    try { tris = THREE.ShapeUtils.triangulateShape(pts, []); } catch { tris = []; }
+    for (const t of tris) for (const i of t) { pos.push(pts[i].x, top, pts[i].y); col.push(roof.r, roof.g, roof.b); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+}
+let city = buildCity(); scene.add(city);
+progress(.9, "Placing homes, schools and SkyTrain…");
+
+// SkyTrain (elevated guideway)
+const LINES = [
+  ["Waterfront", "Stadium", "Main St", "Commercial-Broadway", "Nanaimo", "29th Ave", "Joyce-Collingwood", "Patterson", "Metrotown", "Royal Oak", "Edmonds", "22nd St", "New Westminster", "Columbia", "Scott Rd"],
+  ["Columbia", "Sapperton", "Braid", "Lougheed", "Production Way"],
+  ["VCC-Clark", "Commercial-Broadway", "Renfrew", "Rupert", "Gilmore", "Brentwood", "Holdom", "Sperling", "Lake City", "Production Way", "Lougheed", "Burquitlam", "Moody Centre", "Inlet Centre", "Coquitlam Central", "Lincoln", "Lafarge Lake"],
+  ["Waterfront", "Broadway-City Hall", "King Edward", "Oakridge", "Langara", "Marine Dr"],
+];
+const EXTRA_ST = { "Waterfront": [49.2856, -123.1115], "Stadium": [49.2794, -123.1094] };
+const stXZ = name => { if (DATA.stations[name]) return DATA.stations[name]; const e = EXTRA_ST[name]; return e ? [(e[1] - WORLD.lon0) * WORLD.mx, -(e[0] - WORLD.lat0) * WORLD.mz] : null; };
+const sky = new THREE.Group();
+const railMat = new THREE.MeshLambertMaterial({ color: "#3d4f58" }), stMat = new THREE.MeshLambertMaterial({ color: "#ffffff" });
+function buildSky() {
+  for (const ch of [...sky.children]) { sky.remove(ch); ch.geometry.dispose(); }
+  for (const line of LINES) {
+    const st = line.map(stXZ).filter(Boolean), pts = [];
+    for (let i = 1; i < st.length; i++) {  // follow the terrain: guideway 14 m above ground, sampled every ~120 m
+      const [ax, az] = st[i - 1], [bx, bz] = st[i], n = Math.max(1, Math.round(Math.hypot(bx - ax, bz - az) / 120));
+      for (let k = i === 1 ? 0 : 1; k <= n; k++) { const x = ax + (bx - ax) * k / n, z = az + (bz - az) * k / n; pts.push(new THREE.Vector3(x, ground(x, z) + 14, z)); }
+    }
+    const path = new THREE.CurvePath(); for (let i = 1; i < pts.length; i++) path.add(new THREE.LineCurve3(pts[i - 1], pts[i]));
+    sky.add(new THREE.Mesh(new THREE.TubeGeometry(path, pts.length, 9, 6, false), railMat));
+  }
+  for (const name of Object.keys(DATA.stations)) { const [x, z] = DATA.stations[name]; const m = new THREE.Mesh(new THREE.CylinderGeometry(38, 38, 22, 20), stMat); m.position.set(x, ground(x, z) + 11, z); m.userData = { station: name }; sky.add(m); }
+}
+buildSky();
+scene.add(sky);
+
+// Schools: pins coloured by rating
+const ratingCol = r => r == null ? "#8a9593" : r >= 7 ? "#0e7c70" : r >= 4 ? "#9aa5a3" : "#c2413b";
+const pinGeo = new THREE.ConeGeometry(34, 120, 12); pinGeo.rotateX(Math.PI); pinGeo.translate(0, 60, 0);
+const schools = new THREE.InstancedMesh(pinGeo, new THREE.MeshLambertMaterial(), DATA.schools.length);
+const m4 = new THREE.Matrix4(), cc = new THREE.Color();
+function placeSchools() { DATA.schools.forEach((s, i) => { m4.makeTranslation(s.x, ground(s.x, s.z) + 20, s.z); schools.setMatrixAt(i, m4); schools.setColorAt(i, cc.set(ratingCol(s.rating))); }); schools.instanceMatrix.needsUpdate = true; }
+placeSchools();
+scene.add(schools);
+
+// Listings: pillars
+const pillarGeo = new THREE.CylinderGeometry(24, 24, 1, 14); pillarGeo.translate(0, .5, 0);
+const pillarMat = new THREE.MeshLambertMaterial({ emissive: "#000000" });
+const pillars = new THREE.InstancedMesh(pillarGeo, pillarMat, L.length);
+scene.add(pillars);
+const ringMesh = new THREE.Mesh(new THREE.TorusGeometry(70, 9, 8, 40), new THREE.MeshBasicMaterial({ color: "#142120" }));
+ringMesh.rotation.x = Math.PI / 2; ringMesh.visible = false; scene.add(ringMesh);
+
+// Labels
+function label(text, size = 1) {
+  // Fixed on-screen size (sizeAttenuation off) so labels stay readable from overview to street level.
+  const c = document.createElement("canvas"), ctx = c.getContext("2d"), f = 64;
+  ctx.font = `800 ${f}px Archivo, Arial`; const w = ctx.measureText(text).width + 40;
+  c.width = w; c.height = f * 1.5; ctx.font = `800 ${f}px Archivo, Arial`;
+  ctx.lineWidth = 10; ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.fillStyle = "#23403c"; ctx.textBaseline = "middle";
+  ctx.strokeText(text, 20, c.height / 2); ctx.fillText(text, 20, c.height / 2);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true, sizeAttenuation: false }));
+  const hgt = .042 * size; s.scale.set(hgt * w / c.height, hgt, 1); s.renderOrder = 10; return s;
+}
+const labels = new THREE.Group();
+const toXZ = (lat, lon) => [(lon - WORLD.lon0) * WORLD.mx, -(lat - WORLD.lat0) * WORLD.mz];
+for (const [name, lat, lon] of [["VANCOUVER", 49.262, -123.1], ["BURNABY", 49.245, -122.975], ["NEW WESTMINSTER", 49.207, -122.915], ["PORT MOODY", 49.295, -122.86], ["COQUITLAM", 49.275, -122.80], ["PORT COQUITLAM", 49.262, -122.755]]) {
+  const s = label(name, 1), [x, z] = toXZ(lat, lon); s.position.set(x, 400, z); s.userData.lift = 400; labels.add(s);
+}
+for (const name of ["Metrotown", "Brentwood", "Lougheed", "Moody Centre", "Commercial-Broadway", "New Westminster", "Joyce-Collingwood", "Coquitlam Central", "Edmonds", "Oakridge"]) {
+  if (!DATA.stations[name]) continue; const s = label(name, .55), [x, z] = DATA.stations[name]; s.position.set(x, 120, z); s.userData.lift = 120; labels.add(s);
+}
+for (const [name, lat, lon] of [["Grouse Mountain", 49.3806, -123.0815], ["Mount Seymour", 49.3667, -122.9453], ["Burnaby Mountain", 49.2795, -122.9180], ["Burke Mountain", 49.3180, -122.7280], ["Cypress", 49.3960, -123.2040]]) {
+  const s = label(name, .6), [x, z] = toXZ(lat, lon); s.position.set(x, 200, z); s.userData.lift = 200; labels.add(s);
+}
+const placeLabels = () => labels.children.forEach(s => s.position.y = ground(s.position.x, s.position.z) + s.userData.lift);
+placeLabels();
+scene.add(labels);
+
+/* ---------- Encoding ---------- */
+const WALK_STEPS = [[90, "#0b5d55"], [75, "#138a7e"], [60, "#4fb3a6"], [40, "#9fd6cd"], [0, "#dcefeb"]];
+const AGE_STEPS = [[2020, "#1c5cab", "2020+"], [2010, "#3987e5", "2010s"], [2000, "#86b6ef", "2000s"], [1983, "#e9a23b", "1983–99 leaky era"], [0, "#9b6a3c", "Before 1983"]];
+const LOC_STEPS = [[10, "#b3261e", "Prime (+10%)"], [3, "#e07a5f", "Above average"], [-3, "#b8c0bf", "Average"], [-10, "#6fb3a9", "Below average"], [-1e9, "#0e7c70", "Value location"]];
+function colorOf(l, mode) {
+  if (mode === "ovr") return TIER[l.tier];
+  if (mode === "gap") return l.gap <= -10 ? "#0e7c70" : l.gap <= -5 ? "#7cc2b8" : l.gap < 5 ? "#aab3b1" : "#c2413b";
+  if (mode === "school") return ratingCol(l.school_rating);
+  if (mode === "walk") return WALK_STEPS.find(([t]) => (l.walk ?? 0) >= t)[1];
+  if (mode === "loc") return LOC_STEPS.find(([t]) => l.loc_prem >= t)[1];
+  if (mode === "age") return l.year == null ? "#c9cfce" : AGE_STEPS.find(([t]) => l.year >= t)[1];
+}
+function heightOf(l, mode) {
+  if (mode === "price") return 40 + (l.price / 1.5e6) * 300;
+  if (mode === "ovr") return Math.max(30, (l.ovr - 45) * 6);
+  if (mode === "psf") return 40 + Math.min(l.psf, 1400) / 1400 * 280;
+  return 160;
+}
+const LEGENDS = {
+  ovr: [["#0f7a6e", "Value pick (15%+ below model)"], [TIER.gold, "Gold, rating 80+"], [TIER.silver, "Silver, 70–79"], [TIER.bronze, "Bronze, under 70"]],
+  gap: [["#0e7c70", "10%+ below model value"], ["#7cc2b8", "5–10% below"], ["#aab3b1", "Within ±5%"], ["#c2413b", "5%+ above"]],
+  school: [["#0e7c70", "School 7+/10"], ["#9aa5a3", "4–7"], ["#c2413b", "Under 4"]],
+  walk: WALK_STEPS.map(([t, c]) => [c, t ? `Walk score ${t}+` : "Under 40"]),
+  loc: LOC_STEPS.map(([, c, n]) => [c, n]),
+  age: [...AGE_STEPS.map(([, c, n]) => [c, n]), ["#c9cfce", "Year unknown"]],
+};
+const state = { color: "ovr", height: "price", type: "", max: 1500000, clean: true, sel: null };
+const visible = l => (!state.type || l.type === state.type) && l.price <= state.max && (!state.clean || !restricted(l));
+const scoreOf = { ovr: l => l.ovr, gap: l => -l.gap, school: l => l.school_rating ?? -1, walk: l => l.walk ?? 0, loc: l => -l.loc_prem, age: l => l.year ?? 0 };
+const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+function refresh() {
+  L.forEach((l, i) => {
+    if (!visible(l)) { pillars.setMatrixAt(i, hidden); return; }
+    m4.makeScale(1, heightOf(l, state.height), 1).setPosition(l.x, ground(l.x, l.z), l.z);
+    pillars.setMatrixAt(i, m4); pillars.setColorAt(i, cc.set(colorOf(l, state.color)));
+  });
+  pillars.instanceMatrix.needsUpdate = true; if (pillars.instanceColor) pillars.instanceColor.needsUpdate = true;
+  $("#legend").innerHTML = LEGENDS[state.color].map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join("") + `<span class="sub2">Pin = school, coloured by rating out of 10</span>`;
+  const names = { ovr: "overall rating", gap: "value vs model", school: "school rating", walk: "walk score", loc: "cheapest location", age: "newest building" };
+  $("#top-title").textContent = `Top 10 by ${names[state.color]}`;
+  const top = L.filter(visible).sort((a, b) => scoreOf[state.color](b) - scoreOf[state.color](a)).slice(0, 10);
+  $("#top").innerHTML = top.map(l => `<button type="button" data-i="${L.indexOf(l)}"><span class="badge" style="background:${TIER[l.tier]};${l.tier === "special" ? "color:#dffdf7" : ""}">${l.ovr}</span><span>${esc(l.address)}<br><span class="sub2">${esc(l.neighbourhood)} · ${l.type === "House" ? "House / duplex" : l.type}</span></span><span class="mono">${fmtK(l.price)}</span></button>`).join("");
+}
+
+/* ---------- Details panel ---------- */
+function attrBars(l) { return `<div class="attrs">${Object.entries(l.attr).map(([k, v]) => `<div><span>${k}</span><em><i style="width:${(v - 35) / 64 * 100}%"></i></em><span class="mono">${v}</span></div>`).join("")}</div>`; }
+function showListing(l) {
+  state.sel = { kind: "home", l };
+  ringMesh.visible = true; ringMesh.position.set(l.x, ground(l.x, l.z) + 6, l.z);
+  const flags = (l.flags || []).filter(f => HARD.has(f)).map(f => `<span class="pill">${esc(f)}</span>`).join("") + (l.leaky_era ? `<span class="pill">Leaky-condo era (${l.year})</span>` : "");
+  $("#info").innerHTML = `<div style="display:flex;gap:10px;align-items:center"><span class="badge" style="height:40px;min-width:48px;font-size:24px;background:${TIER[l.tier]};${l.tier === "special" ? "color:#dffdf7" : ""}">${l.ovr}</span><div><h2>${esc(l.address)}</h2><div class="sub2">${esc(l.neighbourhood)}, ${esc(l.area)} · ${l.type === "House" ? "House / duplex" : l.type}</div></div></div>
+    ${attrBars(l)}
+    <dl class="kv"><dt>Asking</dt><dd class="mono">${fmt$(l.price)}</dd><dt>Model value</dt><dd class="mono">${fmt$(l.fair)} (${pct(l.gap)})</dd>
+      <dt>Size</dt><dd>${l.sqft.toLocaleString()} sqft · ${l.beds} bed / ${l.baths ?? "—"} bath</dd><dt>Built</dt><dd>${l.year ?? "Unknown"}</dd>
+      <dt>School</dt><dd>${esc(l.school || "—")}${l.school_rating != null ? ` <b>${l.school_rating.toFixed(1)}/10</b>` : ""}<div class="sub2">${l.school_src === "catchment" ? "Catchment school" : "Nearest, catchment not confirmed"}</div></dd>
+      <dt>Walk score</dt><dd class="mono">${Math.round(l.walk)}</dd><dt>SkyTrain</dt><dd>${esc(l.station)} <span class="mono sub2">${l.station_km} km</span></dd>
+      <dt>Location</dt><dd>${esc(l.loc_tier)} <span class="mono sub2">${pct(l.loc_prem)}</span></dd>
+      ${l.cuts ? `<dt>Price cuts</dt><dd>${l.cuts} (${pct(l.cut_pct)})</dd>` : ""}
+      ${l.rent_city ? `<dt>Typical rent</dt><dd class="mono">${fmt$(l.rent_city)}/mo <span class="sub2">3-bed, ${esc(l.area)}</span></dd>` : ""}
+      <dt>Source</dt><dd>${esc(l.source || "")}${l.hermes_rank ? ` · Hermes shortlist #${l.hermes_rank}` : ""}${l.fact_level === "card" ? " · card facts only" : ""}${l.band === "comparison" ? " · above $1.2M" : ""}</dd></dl>
+    ${flags ? `<div>${flags}</div>` : ""}
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener">Open listing</a><a class="btn ghost" href="${DASHBOARD}" target="_blank" rel="noopener">Dashboard</a></div>`;
+  if (innerWidth <= 820) { $("#info").hidden = false; $("#controls").hidden = true; }
+}
+function showSchool(s) {
+  state.sel = { kind: "school", s };
+  ringMesh.visible = true; ringMesh.position.set(s.x, ground(s.x, s.z) + 6, s.z);
+  const users = L.filter(l => l.school === s.name);
+  $("#info").innerHTML = `<div class="lab">${s.level === "sec" ? "Secondary school" : "Elementary school"}</div><h2>${esc(s.name)}</h2>
+    <div style="font:800 30px var(--display);color:${ratingCol(s.rating)}">${s.rating != null ? s.rating.toFixed(1) + "/10" : "Not rated"}</div>
+    <p class="sub2" style="margin:0">${s.level === "sec" ? "FSA is written in Grades 4 and 7 only, so secondary schools aren't rated." : "Rank of its 2023–2026 Grade 4 and 7 FSA results among Metro Vancouver public schools."}${s.french ? " Offers French immersion." : ""}</p>
+    <div class="lab">${users.length} listing${users.length === 1 ? "" : "s"} use this school</div>
+    <div class="top-list">${users.slice(0, 10).map(l => `<button type="button" data-i="${L.indexOf(l)}"><span class="badge" style="background:${TIER[l.tier]}">${l.ovr}</span><span>${esc(l.address)}</span><span class="mono">${fmtK(l.price)}</span></button>`).join("")}</div>`;
+  if (innerWidth <= 820) { $("#info").hidden = false; $("#controls").hidden = true; }
+}
+function introInfo() {
+  $("#info").innerHTML = `<h2>A 3D model of the home search</h2>
+    <p class="sub2" style="margin:0">Each pillar is a home for sale from Hermes: 3-bed condos and townhouses, plus houses and duplexes with 3+ bedrooms, up to $1.5M. Its colour and height follow the controls on the left. Pins are schools, coloured by rating. The teal glow on the ground is walkability, and the dark line is SkyTrain.</p>
+    <p class="sub2" style="margin:0">Tap any pillar for its scorecard, or pick a home from the Top 10.</p>
+    <p class="sub2" style="margin:0">Buildings: ${BINV.getUint32(0, true).toLocaleString()} apartments, towers and larger buildings are 3D, using heights from OpenStreetMap where known. Houses are drawn flat on the ground. Terrain comes from Canada's national elevation model (CDEM) via open terrain tiles, so Burnaby Mountain, the North Shore mountains and Burke Mountain are in their real shape.</p>
+    <a class="btn ghost" href="${DASHBOARD}" target="_blank" rel="noopener">Open the full dashboard</a>`;
+}
+
+/* ---------- Camera views ---------- */
+const VIEWS = { "Overview": [49.255, -122.98, 30000, .8], "Downtown": [49.283, -123.118, 3200, .9], "Metrotown": [49.226, -123.003, 2600, .95], "Brentwood": [49.266, -123.0, 2600, .95],
+  "New West": [49.205, -122.912, 3200, .9], "Port Moody": [49.278, -122.85, 3600, .9], "Coquitlam": [49.276, -122.80, 3800, .9], "Lougheed": [49.249, -122.897, 2800, .95], "North Shore": [49.33, -123.03, 16000, 1.05] };
+let fly = null;
+function flyTo(x, z, dist, tilt = .9, dur = 1300) {
+  const target = new THREE.Vector3(x, ground(x, z), z);
+  const az = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) || .35;
+  const pos = new THREE.Vector3(x + Math.sin(az) * dist * Math.sin(tilt), dist * Math.cos(tilt) + dist * .15, z + Math.cos(az) * dist * Math.sin(tilt));
+  fly = { t0: performance.now(), dur, fromT: controls.target.clone(), toT: target, fromP: camera.position.clone(), toP: pos };
+}
+$("#views").innerHTML = Object.keys(VIEWS).map(v => `<button class="chip" type="button" data-v="${v}">${v}</button>`).join("");
+$("#views").addEventListener("click", e => { const b = e.target.closest("[data-v]"); if (!b) return; const [la, lo, d, t] = VIEWS[b.dataset.v]; const [x, z] = toXZ(la, lo); flyTo(x, z, d, t); });
+function flyToListing(l) { showListing(l); flyTo(l.x, l.z, 1500, .95); }
+for (const el of [$("#top"), $("#info")]) el.addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (b) flyToListing(L[+b.dataset.i]); });
+
+/* ---------- Picking ---------- */
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+function pick(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects([pillars, schools, sky], false)[0];
+  if (!hit) return null;
+  if (hit.object === pillars) { const l = L[hit.instanceId]; return visible(l) ? { kind: "home", l } : null; }
+  if (hit.object === schools) return { kind: "school", s: DATA.schools[hit.instanceId] };
+  if (hit.object.userData.station) return { kind: "station", name: hit.object.userData.station };
+  return null;
+}
+let down = null;
+renderer.domElement.addEventListener("pointerdown", e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener("pointerup", e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+  const h = pick(e); if (h?.kind === "home") showListing(h.l); else if (h?.kind === "school") showSchool(h.s);
+});
+let hoverQueued = false;
+renderer.domElement.addEventListener("pointermove", e => {
+  if (hoverQueued || e.buttons) return; hoverQueued = true;
+  requestAnimationFrame(() => {
+    hoverQueued = false; const h = pick(e), tip = $("#tip");
+    renderer.domElement.style.cursor = h ? "pointer" : "";
+    if (!h) { tip.hidden = true; return; }
+    tip.innerHTML = h.kind === "home" ? `<b>${esc(h.l.address)}</b><br>${fmtK(h.l.price)} · OVR ${h.l.ovr} · ${pct(h.l.gap)} vs model` : h.kind === "school" ? `<b>${esc(h.s.name)}</b><br>${h.s.rating != null ? h.s.rating.toFixed(1) + "/10" : "Not rated"}` : `<b>${esc(h.name)}</b> station`;
+    tip.hidden = false; tip.style.left = Math.min(e.clientX + 14, innerWidth - 270) + "px"; tip.style.top = (e.clientY + 14) + "px";
+  });
+});
+renderer.domElement.addEventListener("pointerleave", () => $("#tip").hidden = true);
+
+/* ---------- Controls ---------- */
+const on = (id, fn) => $(id).addEventListener("input", fn);
+on("#c-color", e => { state.color = e.target.value; refresh(); });
+on("#c-height", e => { state.height = e.target.value; refresh(); });
+on("#f-type", e => { state.type = e.target.value; refresh(); });
+on("#f-max", e => { const v = +e.target.value; if (v > 0) { state.max = v; refresh(); } });
+on("#f-clean", e => { state.clean = e.target.checked; refresh(); });
+on("#l-bld", e => city.visible = e.target.checked);
+on("#c-ex", e => {
+  EX = +e.target.value; applyTerrainHeights();
+  const vis = city.visible; scene.remove(city); city.geometry.dispose(); city = buildCity(); city.visible = vis; scene.add(city); __twin.city = city;
+  buildSky(); placeSchools(); placeLabels(); refresh();
+  if (state.sel) { const o = state.sel.l || state.sel.s; ringMesh.position.y = ground(o.x, o.z) + 6; }
+  controls.target.y = ground(controls.target.x, controls.target.z);
+});
+on("#l-walk", e => walkLayer.visible = e.target.checked);
+on("#l-sch", e => schools.visible = e.target.checked);
+on("#l-sky", e => sky.visible = e.target.checked);
+on("#l-lbl", e => labels.visible = e.target.checked);
+on("#l-ter", e => terrain.visible = e.target.checked);
+$("#t-controls").addEventListener("click", () => { $("#controls").hidden = !$("#controls").hidden; $("#info").hidden = true; });
+$("#t-info").addEventListener("click", () => { $("#info").hidden = !$("#info").hidden; $("#controls").hidden = true; });
+if (innerWidth <= 820) { $("#controls").hidden = true; $("#info").hidden = true; }
+addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+/* ---------- Go ---------- */
+refresh(); introInfo();
+{ const [x, z] = toXZ(49.245, -122.96); controls.target.set(x, 0, z); camera.position.set(x - 5200, 16000, z + 17000); }
+const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+renderer.setAnimationLoop(now => {
+  if (fly) {
+    const t = Math.min(1, (now - fly.t0) / fly.dur), k = ease(t);
+    controls.target.lerpVectors(fly.fromT, fly.toT, k); camera.position.lerpVectors(fly.fromP, fly.toP, k);
+    if (t >= 1) fly = null;
+  }
+  if (ringMesh.visible) ringMesh.rotation.z += .01;
+  controls.update(); renderer.render(scene, camera);
+});
+// Read-only handle for automated browser tests (screen positions of pillars and schools).
+window.__twin = { THREE, camera, controls, renderer, state, L, schools: DATA.schools, pillars, schoolMesh: schools, city, walkLayer, sky, labels, terrain, ground,
+  toScreen(x, y, z) { const v = new THREE.Vector3(x, y, z).project(camera); const r = renderer.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height, v.z]; } };
+progress(1); $("#loading").hidden = true;
+</script>

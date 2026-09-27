@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Vancouver, Burnaby, New Westminster and the Tri-Cities in 3D from open data: terrain, buildings, SkyTrain, school ratings and walkability.">
+</head>
+<body>
+<title>East Metro 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --glass: rgba(255,255,255,.9); --paper: #ffffff; --paper-2: #f4f7f6; --ink: #11272c; --ink-2: #4a5f63; --ink-3: #7b8c8f; --line: #d5dfdd;
+  --brass: #a8741a; --brass-2: #c9973d; --brass-soft: #f4e8cc; --pine: #22614f; --pine-soft: #dcefe8; --rose: #a8414f; --rose-soft: #f6e1e4;
+  --sky: #2c6a93; --sky-soft: #deebf4; --shadow: 0 2px 6px rgba(17,39,44,.08), 0 18px 44px rgba(17,39,44,.16);
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif; --body: "Atkinson Hyperlegible", "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; --paper-bg: #e7eeec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --glass: rgba(21,36,39,.9); --paper: #152427; --paper-2: #1b2d30; --ink: #e7eeed; --ink-2: #aebdbd; --ink-3: #82938f; --line: #2c3f42;
+    --brass: #dcaa4a; --brass-2: #e9bd65; --brass-soft: #3a2f17; --pine: #56b89a; --pine-soft: #183a31; --rose: #e27e8d; --rose-soft: #3d2227; --sky: #6fb0dc; --sky-soft: #173042;
+    --shadow: 0 2px 10px rgba(0,0,0,.4), 0 18px 44px rgba(0,0,0,.35); --paper-bg: #0e1a1c; }
+}
+:root[data-theme="dark"] { color-scheme: dark; --glass: rgba(21,36,39,.9); --paper: #152427; --paper-2: #1b2d30; --ink: #e7eeed; --ink-2: #aebdbd; --ink-3: #82938f; --line: #2c3f42;
+  --brass: #dcaa4a; --brass-2: #e9bd65; --brass-soft: #3a2f17; --pine: #56b89a; --pine-soft: #183a31; --rose: #e27e8d; --rose-soft: #3d2227; --sky: #6fb0dc; --sky-soft: #173042;
+  --shadow: 0 2px 10px rgba(0,0,0,.4), 0 18px 44px rgba(0,0,0,.35); --paper-bg: #0e1a1c; }
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--paper-bg); color: var(--ink); font: 15px/1.45 var(--body); overflow: hidden; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+a { color: var(--sky); }
+:focus-visible { outline: 3px solid var(--brass-2); outline-offset: 2px; }
+.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-2); } .small { font-size: 13.5px; } .tiny { font-size: 12px; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.glass { background: var(--glass); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+
+/* Top bar */
+#bar { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; z-index: 10; display: flex; align-items: center; gap: 10px 18px; padding: 8px 10px 8px 14px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand h1 { font-size: 22px; font-weight: 800; white-space: nowrap; }
+.brand svg { width: 34px; height: 22px; }
+#modes { display: flex; gap: 2px; background: var(--paper-2); border-radius: 12px; padding: 3px; overflow-x: auto; scrollbar-width: none; }
+#modes button { border: 0; background: none; padding: 7px 12px; border-radius: 9px; font-weight: 700; font-size: 14px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+#modes button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+#modes .count { font: 500 11px var(--mono); background: var(--brass-soft); color: var(--brass); padding: 1px 6px; border-radius: 999px; margin-left: 4px; }
+#modes .count:empty { display: none; }
+#people { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.face { width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid var(--c, var(--line)); object-fit: cover; background: var(--paper); flex: none; }
+.face.ghost { border-style: dashed; display: inline-grid; place-items: center; font-size: 12px; color: var(--ink-3); }
+
+/* Left rail */
+#rail { position: fixed; z-index: 9; top: calc(76px + env(safe-area-inset-top, 0px)); left: 12px; width: 286px; max-height: calc(100% - 100px); overflow-y: auto; padding: 14px; display: grid; gap: 14px; align-content: start; }
+.lab { font: 500 11.5px var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 5px; }
+.lenses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.lenses button { border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 7px 4px; font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--ink-2); }
+.lenses button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.legend { display: grid; gap: 3px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: flex; align-items: center; gap: 7px; }
+.legend i { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.toggle { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 5px 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--ink-2); }
+.toggle[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13.5px; cursor: pointer; }
+.check input { accent-color: var(--brass); width: 15px; height: 15px; }
+input[type=number], input[type=date], textarea, select { width: 100%; font: 14.5px var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+textarea { resize: vertical; min-height: 58px; }
+.toplist { display: grid; gap: 2px; }
+.toplist button { display: grid; grid-template-columns: 32px 1fr auto; gap: 8px; align-items: center; text-align: left; border: 0; background: none; border-radius: 10px; padding: 6px; cursor: pointer; font-size: 13px; }
+.toplist button:hover { background: var(--paper-2); }
+.badge { display: inline-grid; place-items: center; height: 22px; min-width: 30px; border-radius: 6px; font: 800 12.5px var(--display); color: #fff; }
+
+/* Right card */
+#card { position: fixed; z-index: 9; top: calc(76px + env(safe-area-inset-top, 0px)); right: 12px; width: 392px; max-height: calc(100% - 100px); overflow-y: auto; }
+.card-in { padding: 18px; display: grid; gap: 14px; }
+.home-head { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; }
+.home-head h2 { font-size: 24px; font-weight: 750; line-height: 1.1; }
+.xbtn { border: 0; background: var(--paper-2); width: 32px; height: 32px; border-radius: 10px; cursor: pointer; font-size: 18px; line-height: 1; color: var(--ink-2); }
+.pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--paper-2); color: var(--ink-2); }
+.pill.good { background: var(--pine-soft); color: var(--pine); } .pill.warn { background: var(--brass-soft); color: var(--brass); } .pill.bad { background: var(--rose-soft); color: var(--rose); }
+.price-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.price-line .ask { font: 800 32px/1 var(--display); }
+.price-line .mo { font: 700 16px var(--display); color: var(--ink-2); }
+.verdict { font-weight: 700; } .verdict.good { color: var(--pine); } .verdict.bad { color: var(--rose); }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fact { display: grid; grid-template-columns: 24px 1fr; gap: 8px; padding: 10px; border-radius: 12px; background: var(--paper-2); }
+.fact svg { width: 22px; height: 22px; color: var(--sky); }
+.fact b { display: block; font-size: 13.5px; line-height: 1.25; }
+.fact span { font-size: 12px; color: var(--ink-2); line-height: 1.3; display: block; }
+.reasons { display: grid; gap: 10px; }
+.reasons h3 { font-size: 14.5px; }
+.reasons ul { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13.5px; }
+.reasons .yes h3 { color: var(--pine); } .reasons .no h3 { color: var(--rose); }
+.attrs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.attrs div { display: grid; justify-items: center; gap: 2px; font: 700 11px var(--mono); color: var(--ink-3); }
+.attrs b { font: 800 18px var(--display); color: var(--ink); }
+.vote-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.vote { display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border-radius: 12px; border: 2px solid var(--line); background: var(--paper); cursor: pointer; font-weight: 700; font-size: 13.5px; }
+.vote svg { width: 30px; height: 20px; }
+.vote kbd { font: 500 10.5px var(--mono); color: var(--ink-3); }
+.vote.love { color: var(--pine); } .vote.maybe { color: var(--sky); } .vote.pass { color: var(--rose); }
+.vote[aria-pressed="true"].love { background: var(--pine-soft); border-color: var(--pine); }
+.vote[aria-pressed="true"].maybe { background: var(--sky-soft); border-color: var(--sky); }
+.vote[aria-pressed="true"].pass { background: var(--rose-soft); border-color: var(--rose); }
+.keyturn { transition: transform .45s cubic-bezier(.2,.9,.3,1.3); transform-origin: 9px 11px; }
+.vote[aria-pressed="true"].love .keyturn { transform: rotate(90deg); }
+.partner-box { border-radius: 12px; padding: 12px; border: 1px dashed var(--line); display: grid; gap: 4px; font-size: 13.5px; }
+.partner-box .who { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.partner-box.both { border: 2px solid var(--pine); background: var(--pine-soft); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 11px; border: 1px solid var(--line); background: var(--paper); padding: 8px 13px; font-weight: 700; cursor: pointer; text-decoration: none; color: var(--ink); font-size: 14px; }
+.btn.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn:disabled { opacity: .45; cursor: default; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.steps { display: grid; gap: 5px; }
+.step { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; cursor: pointer; }
+.step input { width: 17px; height: 17px; accent-color: var(--pine); margin-top: 1px; flex: none; }
+.step.done span { text-decoration: line-through; color: var(--ink-3); }
+.intro { display: grid; gap: 12px; }
+.intro .big { font: 800 26px/1.1 var(--display); }
+.stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { padding: 10px; border-radius: 12px; background: var(--paper-2); display: grid; gap: 2px; }
+.stat b { font: 800 24px/1 var(--display); }
+.stat span { font-size: 12px; color: var(--ink-2); line-height: 1.25; }
+
+/* Sheets (picks / priorities / report) */
+#sheet { position: fixed; z-index: 12; top: calc(76px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: min(820px, calc(100% - 24px)); max-height: calc(100% - 96px); overflow-y: auto; }
+.sheet-in { padding: 24px; display: grid; gap: 18px; }
+.sheet-in h2 { font-size: clamp(24px, 3.6vw, 34px); font-weight: 750; line-height: 1.1; }
+.sheet-close { position: sticky; top: 0; float: right; margin: 10px 10px 0 0; z-index: 2; }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brass); }
+.pick { border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 12px; background: var(--paper); }
+.pick-head { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+.two-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 8px; }
+.note { border-radius: 10px; padding: 8px 10px; background: var(--paper-2); border-left: 4px solid var(--c, var(--line)); font-size: 13.5px; }
+.note .who { font-weight: 700; font-size: 12.5px; display: flex; gap: 6px; align-items: center; }
+.vote-dot { display: inline-block; font: 700 11px var(--body); padding: 1px 7px; border-radius: 999px; }
+.vote-dot.love { background: var(--pine-soft); color: var(--pine); } .vote-dot.maybe { background: var(--sky-soft); color: var(--sky); } .vote-dot.pass { background: var(--rose-soft); color: var(--rose); } .vote-dot.none { background: var(--paper-2); color: var(--ink-3); }
+.row-home { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.prio { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 760px) { .prio { grid-template-columns: 1fr; } }
+.slider { display: grid; gap: 3px; }
+.slider .top { display: flex; justify-content: space-between; font-size: 14px; }
+.slider input { width: 100%; accent-color: var(--brass); }
+.slider .theirs { font: 500 11.5px var(--mono); color: var(--ink-3); }
+.hex { width: 100%; max-width: 320px; height: auto; justify-self: center; }
+.hex text { font: 700 11.5px var(--body); fill: var(--ink-2); }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.letter p { font-size: 16.5px; line-height: 1.6; max-width: 66ch; }
+.letter { display: grid; gap: 16px; }
+.pull { font: 700 20px/1.3 var(--display); border-left: 4px solid var(--brass); padding-left: 14px; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 130px 1fr 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.bar em { display: block; height: 10px; border-radius: 5px; background: var(--line); position: relative; }
+.bar em i { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+
+/* Tour bar, map furniture */
+#tour { position: fixed; z-index: 9; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding: 10px 14px; display: flex; gap: 12px; align-items: center; }
+#tour .prog { width: 160px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+#tour .prog i { display: block; height: 100%; background: var(--brass); }
+#furniture { position: fixed; z-index: 8; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: flex-end; }
+#compass { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; padding: 0; }
+#compass svg { width: 40px; height: 40px; transition: transform .08s linear; }
+#scalebar { padding: 6px 10px; display: grid; gap: 3px; font: 500 11px var(--mono); color: var(--ink-2); }
+#scalebar i { display: block; height: 6px; border: 2px solid var(--ink-2); border-top: 0; }
+#light { padding: 6px; display: flex; gap: 2px; border-radius: 12px; }
+#light button { border: 0; background: none; padding: 5px 8px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--ink-2); cursor: pointer; }
+#light button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+#tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: var(--paper-bg); padding: 7px 10px; border-radius: 9px; font-size: 12.5px; max-width: 260px; }
+#toast { position: fixed; z-index: 30; left: 50%; top: calc(80px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper-bg); padding: 9px 15px; border-radius: 12px; font-size: 14px; box-shadow: var(--shadow); }
+#loading { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: var(--paper-bg); }
+#loading .box { display: grid; gap: 10px; justify-items: center; color: var(--ink-2); }
+#loading .bar2 { width: 220px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+#loading .bar2 i { display: block; height: 100%; width: 0; background: var(--brass); transition: width .2s; }
+#sync { position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); top: calc(76px + env(safe-area-inset-top, 0px)); padding: 8px 14px; font-size: 13px; max-width: min(560px, calc(100% - 24px)); text-align: center; }
+@media (max-width: 820px) { #sync { top: calc(118px + env(safe-area-inset-top, 0px)); } }
+#mobilebar { display: none; }
+body.public .homes-only { display: none !important; }
+.school-card { display: grid; gap: 12px; }
+.school-card .big { font: 800 40px/1 var(--display); }
+@media (max-width: 820px) {
+  #bar { padding: 8px; gap: 8px; }
+  .brand h1 { font-size: 19px; } #people span { display: none; }
+  #modes { order: 3; width: 100%; }
+  #rail, #card { top: auto; bottom: calc(66px + env(safe-area-inset-bottom, 0px)); left: 8px; right: 8px; width: auto; max-height: 52%; }
+  #sheet { top: calc(112px + env(safe-area-inset-top, 0px)); max-height: calc(100% - 128px); }
+  #mobilebar { display: flex; position: fixed; z-index: 10; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); gap: 6px; padding: 6px; }
+  #furniture { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); right: 10px; }
+  #scalebar, #light { display: none; }
+  #tour { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+  .facts { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .keyturn { transition: none; } }
+</style>
+
+<div id="stage"></div>
+<div id="loading"><div class="box"><b style="font: 800 22px var(--display)">East Metro 3D</b><span id="load-msg">Loading the city…</span><span class="bar2"><i id="load-bar"></i></span></div></div>
+
+<header id="bar" class="glass">
+  <div class="brand"><svg viewBox="0 0 40 26" aria-hidden="true"><g fill="none" stroke="var(--brass)" stroke-width="2.4" stroke-linecap="round"><circle cx="8" cy="8" r="5"/><path d="M12 11l9 9m-3-3l3-3m0 6l2-2"/><circle cx="32" cy="8" r="5" stroke="var(--pine)"/><path d="M28 11l-9 9m3-3l-3-3" stroke="var(--pine)"/></g></svg><h1>East Metro 3D</h1></div>
+  <nav id="modes" aria-label="Modes">
+    <button data-mode="explore" aria-pressed="true">Explore</button>
+    <button data-mode="tour" class="homes-only">Tour <span class="count" id="c-tour"></span></button>
+    <button data-mode="picks" class="homes-only">Our picks <span class="count" id="c-picks"></span></button>
+    <button data-mode="prio" class="homes-only">What matters</button>
+    <button data-mode="report" class="homes-only">Report</button>
+  </nav>
+  <div id="people" class="homes-only"></div>
+</header>
+
+<aside id="rail" class="glass" aria-label="Map controls">
+  <div class="homes-only"><span class="lab">Colour homes by</span><div class="lenses" id="lenses"></div></div>
+  <div class="legend" id="legend"></div>
+  <div class="homes-only"><span class="lab">Show</span><div class="chips" id="types"></div></div>
+  <div class="homes-only"><label class="lab" for="f-max">Max price</label><input type="number" id="f-max" step="25000" min="300000"></div>
+  <div><span class="lab">Layers</span><div style="display:grid;gap:5px">
+    <label class="check"><input type="checkbox" id="l-bld" checked> 3D buildings</label>
+    <label class="check"><input type="checkbox" id="l-walk" checked> Walkability glow</label>
+    <label class="check"><input type="checkbox" id="l-sch" checked> Schools</label>
+    <label class="check"><input type="checkbox" id="l-sky" checked> SkyTrain</label>
+    <label class="check"><input type="checkbox" id="l-lbl" checked> Labels</label>
+    <label class="check homes-only"><input type="checkbox" id="l-pass"> Show homes we passed on</label></div></div>
+  <div class="homes-only"><span class="lab" id="top-title">Best for us</span><div class="toplist" id="top"></div></div>
+</aside>
+
+<aside id="card" class="glass" aria-live="polite"><div class="card-in" id="card-in"></div></aside>
+<div id="sheet" class="glass" hidden><button class="xbtn sheet-close" id="sheet-x" aria-label="Back to the map">×</button><div class="sheet-in" id="sheet-in"></div></div>
+<div id="tour" class="glass" hidden><button class="btn" id="t-prev">Back</button><div style="display:grid;gap:4px"><span class="small" id="t-label"></span><span class="prog"><i id="t-prog"></i></span></div><button class="btn" id="t-skip">Skip</button><button class="btn" id="t-exit">End tour</button></div>
+<div id="furniture"><div id="light" class="glass"><button data-light="day" aria-pressed="true">Day</button><button data-light="golden">Golden hour</button></div><div id="scalebar" class="glass"><span id="scale-l">1 km</span><i id="scale-i" style="width:80px"></i></div><button id="compass" class="glass" aria-label="Face north"><svg viewBox="0 0 40 40" id="needle"><path d="M20 4l6 16h-12z" fill="var(--rose)"/><path d="M20 36l-6-16h12z" fill="var(--ink-3)"/><text x="20" y="15" text-anchor="middle" font-size="7" font-weight="800" fill="#fff" font-family="IBM Plex Mono, monospace">N</text></svg></button></div>
+<div id="mobilebar" class="glass"><button class="btn" id="m-rail">Map</button><button class="btn" id="m-card">Details</button></div>
+<div id="sync" class="glass" hidden></div>
+<div id="tip" hidden></div>
+<div id="toast" hidden></div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { MapControls } from "three/addons/controls/MapControls.js";
+
+const DASHBOARD = "https://claude.ai/artifact/SZSfz3J35ByoZzYaTyFApA";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt$ = v => v == null ? "—" : "$" + Math.round(v).toLocaleString("en-CA");
+const fmtK = v => v == null ? "—" : v >= 999500 ? "$" + (v / 1e6).toFixed(2) + "M" : "$" + Math.round(v / 1000) + "K";
+const pct = (v, d = 0) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d) + "%";
+const typeName = t => t === "House" ? "House / duplex" : t;
+const walkMin = km => Math.max(1, Math.round(km * 1000 / 80));
+const progress = (f, m) => { $("#load-bar").style.width = Math.round(f * 100) + "%"; if (m) $("#load-msg").textContent = m; };
+
+/* ---------- Load ---------- */
+const webgl = (() => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { return false; } })();
+if (!webgl) { $("#load-msg").textContent = "This device can't show 3D graphics (WebGL is off)."; throw new Error("no webgl"); }
+progress(.1, "Loading homes and analysis…");
+const DATA = await (await fetch("platform_data.json")).json();
+progress(.3, "Loading the buildings…");
+const BIN = await fetch("buildings.json").then(r => r.json()).then(j => { const s = atob(j.b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return new DataView(a.buffer); });
+progress(.5, "Loading the terrain and streets…");
+const tl = new THREE.TextureLoader();
+const [groundTex, walkTex, terrTex] = await Promise.all(["ground.png", "walk.png", "terrain.png"].map(u => tl.loadAsync(u)));
+progress(.7, "Building the city…");
+const PUBLIC = !!DATA.public;
+if (PUBLIC) document.body.classList.add("public");
+const H = DATA.homes, byKey = Object.fromEntries(H.map(h => [h.k, h])), W = DATA.world, T = DATA.terrain;
+
+/* ---------- Shared state (same store as the earlier Two Keys page, so votes carry over) ---------- */
+const ATTRS = [["VAL", "Good value"], ["SPC", "Space"], ["SCH", "Schools"], ["WLK", "Walkable"], ["LOC", "Sought-after area"], ["BLD", "Newer building"]];
+const DEFAULT_W = { VAL: 5, SPC: 3, SCH: 4, WLK: 3, LOC: 2, BLD: 3 };
+const DEFAULT_HOUSE = { down: 20, rate: 4.5, amort: 25, maxPrice: 1200000, types: ["Condo", "Townhouse", "House"], cities: [], hideRestricted: true };
+const STEPS = [["viewing", "Book a viewing"], ["comps", "Ask our realtor for sold prices in this building or street (last 6 months)"], ["strata", "Read the strata minutes, depreciation report and bylaws"], ["commute", "Try the commute at rush hour"], ["school", "Visit the school and confirm the catchment"], ["mortgage", "Check the numbers with our mortgage broker"]];
+const S = { me: null, meName: "", meColor: "#a8741a", meAvatar: "", votes: {}, prefs: {}, plans: {}, house: { ...DEFAULT_HOUSE }, mode: "explore", lens: "score", sel: null, tourIdx: 0, profiles: {}, showPassed: false };
+let db = null, userCap = null, readOnly = false, shared = false;
+const LS = "twokeys.v1";
+try { const j = JSON.parse(localStorage.getItem(LS) || "{}"); S.votes.local = j.votes || {}; if (j.prefs) S.prefs.local = j.prefs; S.plans = j.plans || {}; if (j.house) S.house = { ...DEFAULT_HOUSE, ...j.house }; } catch { S.votes.local = {}; }
+const saveLocal = () => { try { localStorage.setItem(LS, JSON.stringify({ votes: S.votes.local || {}, prefs: S.prefs.local || null, plans: S.plans, house: S.house })); } catch {} };
+const writers = {};
+function queueWrite(path, bodyFn) {
+  if (!shared || readOnly) { saveLocal(); return; }
+  const w = writers[path] ||= { busy: false, dirty: false }; w.bodyFn = bodyFn;
+  if (w.busy) { w.dirty = true; return; }
+  const run = async () => { w.busy = true; w.dirty = false;
+    try { await db.doc(path).set(w.bodyFn()); }
+    catch (e) { if (e?.code === "invalid_argument") { readOnly = true; syncNote(); } else if (e?.code === "unavailable") { await new Promise(r => setTimeout(r, 900)); try { await db.doc(path).set(w.bodyFn()); } catch { toast("Couldn't save just now."); } } else if (e?.code === "quota_exceeded") toast("Storage is full, so this change wasn't saved."); }
+    w.busy = false; if (w.dirty) run(); };
+  run();
+}
+const myId = () => shared ? S.me : "local";
+const myVotes = () => S.votes[myId()] || (S.votes[myId()] = {});
+function partnerId() { let best = null, n = -1; for (const id of new Set([...Object.keys(S.votes), ...Object.keys(S.prefs)])) { if (id === myId() || id === "local") continue; const c = Object.keys(S.votes[id] || {}).length; if (c > n) { n = c; best = id; } } return best; }
+const voteOf = (id, k) => (S.votes[id] || {})[k] || null;
+const weightsOf = id => (S.prefs[id] && S.prefs[id].w) || null;
+function ourWeights() { const ws = [weightsOf(myId()), weightsOf(partnerId())].filter(Boolean); if (!ws.length) return DEFAULT_W; const o = {}; for (const [k] of ATTRS) o[k] = ws.reduce((a, w) => a + (w[k] ?? DEFAULT_W[k]), 0) / ws.length; return o; }
+function score(h, w = ourWeights()) { const tw = ATTRS.reduce((a, [k]) => a + w[k], 0) || 1; return Math.round(ATTRS.reduce((a, [k]) => a + w[k] * h.at[k], 0) / tw); }
+function monthly(h) { const loan = h.p * (1 - S.house.down / 100), i = Math.pow(1 + S.house.rate / 200, 1 / 6) - 1, n = S.house.amort * 12; const mort = i > 0 ? loan * i / (1 - Math.pow(1 + i, -n)) : loan / n; const freehold = h.t === "House" && !/strata/i.test(h.ten || ""); const strata = freehold ? 0 : h.st, tax = h.tx; return { total: mort + (strata || 0) + (tax || 0) / 12, partial: strata == null || tax == null, cash: h.p * S.house.down / 100 }; }
+const inScope = h => h.p <= S.house.maxPrice && S.house.types.includes(h.t) && (!S.house.cities.length || S.house.cities.includes(h.c)) && !(S.house.hideRestricted && h.rs);
+function status(h) { const me = voteOf(myId(), h.k)?.v, p = partnerId(), th = p ? voteOf(p, h.k)?.v : null; if (me === "love" && th === "love") return "both"; if (me === "love") return "mine"; if (me === "pass") return "pass"; if (me === "maybe") return "maybe"; return "new"; }
+const visible = h => inScope(h) && (S.showPassed || status(h) !== "pass");
+async function names() { const ids = [S.me, partnerId()].filter(Boolean); if (userCap && ids.length) { try { S.profiles = await userCap.profiles(ids); } catch {} } }
+const nameOf = id => id === myId() ? (S.meName || "You") : ((S.profiles[id] && S.profiles[id].name) || "Your partner");
+const first = id => nameOf(id).split(" ")[0];
+const colorOf = id => id === myId() ? S.meColor : ((S.profiles[id] && S.profiles[id].color) || "#22614f");
+const avatarOf = id => id === myId() ? S.meAvatar : (S.profiles[id] && S.profiles[id].avatarUrl) || "";
+const faceHTML = id => { const a = avatarOf(id); return a ? `<img class="face" style="--c:${colorOf(id)}" src="${esc(a)}" alt="">` : `<span class="face ghost" style="--c:${colorOf(id)}">?</span>`; };
+
+/* ---------- Renderer, sky, light ---------- */
+const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+const lowPower = matchMedia?.("(max-width: 820px)").matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.5 : 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+$("#stage").appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 5, 200000);
+const controls = new MapControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .08; controls.maxPolarAngle = Math.PI * .46; controls.minDistance = 120; controls.maxDistance = 70000; controls.screenSpacePanning = false;
+
+const LIGHTS = {
+  day: { zenith: "#7fa9c9", horizon: "#e3ecee", fog: "#dbe6e8", sun: "#fffaf0", sunI: 2.2, hemiSky: "#ffffff", hemiGround: "#9fb0a8", hemiI: 1.25, dir: [-0.55, 0.62, 0.5], exposure: 1.05 },
+  golden: { zenith: "#5d6f9c", horizon: "#f3c48c", fog: "#e9cfae", sun: "#ffb46b", sunI: 2.6, hemiSky: "#ffe2c2", hemiGround: "#6d6a7c", hemiI: .9, dir: [-0.85, 0.28, 0.45], exposure: 1.0 },
+};
+const skyUni = { zenith: { value: new THREE.Color() }, horizon: { value: new THREE.Color() } };
+const skyDome = new THREE.Mesh(new THREE.SphereGeometry(150000, 32, 16), new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false, uniforms: skyUni,
+  vertexShader: "varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+  fragmentShader: "uniform vec3 zenith; uniform vec3 horizon; varying vec3 vP;\nvoid main(){ float t = pow(clamp(vP.y*1.6,0.0,1.0),0.55); gl_FragColor = vec4(mix(horizon, zenith, t),1.0);\n#include <colorspace_fragment>\n}",
+}));
+scene.add(skyDome);
+scene.fog = new THREE.Fog("#dbe6e8", 55000, 150000);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x9fb0a8, 1.25); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.castShadow = true;
+sun.shadow.mapSize.set(lowPower ? 1024 : 2048, lowPower ? 1024 : 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 1.2;
+scene.add(sun, sun.target);
+let lightMode = "day";
+function applyLight(mode) {
+  lightMode = mode; const L = LIGHTS[mode];
+  skyUni.zenith.value.set(L.zenith); skyUni.horizon.value.set(L.horizon); scene.fog.color.set(L.fog);
+  sun.color.set(L.sun); sun.intensity = L.sunI; hemi.color.set(L.hemiSky); hemi.groundColor.set(L.hemiGround); hemi.intensity = L.hemiI; renderer.toneMappingExposure = L.exposure;
+  document.querySelectorAll("#light button").forEach(b => b.setAttribute("aria-pressed", b.dataset.light === mode));
+}
+applyLight("day");
+
+/* ---------- Terrain (CDEM / SRTM) with the street map draped on it ---------- */
+const HGT = (() => { const img = terrTex.image, c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0); const d = x.getImageData(0, 0, img.width, img.height).data, o = new Float32Array(img.width * img.height); for (let i = 0; i < o.length; i++) o[i] = (d[i * 4] * 256 + d[i * 4 + 1]) / 10 - 50; return o; })();
+function ground(x, z) {
+  const fx = (x - T.x0) / (T.x1 - T.x0) * (T.nx - 1), fz = (z - T.z0) / (T.z1 - T.z0) * (T.nz - 1);
+  if (fx < 0 || fz < 0 || fx > T.nx - 1 || fz > T.nz - 1) return 0;
+  const i = Math.min(Math.floor(fx), T.nx - 2), j = Math.min(Math.floor(fz), T.nz - 2), u = fx - i, v = fz - j;
+  return Math.max(0, HGT[j * T.nx + i] * (1 - u) * (1 - v) + HGT[j * T.nx + i + 1] * u * (1 - v) + HGT[(j + 1) * T.nx + i] * (1 - u) * v + HGT[(j + 1) * T.nx + i + 1] * u * v);
+}
+groundTex.colorSpace = THREE.SRGBColorSpace; groundTex.anisotropy = renderer.capabilities.getMaxAnisotropy(); walkTex.colorSpace = THREE.SRGBColorSpace;
+const terrGeo = new THREE.PlaneGeometry(T.x1 - T.x0, T.z1 - T.z0, T.nx - 1, T.nz - 1);
+terrGeo.rotateX(-Math.PI / 2); terrGeo.translate((T.x0 + T.x1) / 2, 0, (T.z0 + T.z1) / 2);
+{
+  const P = terrGeo.attributes.position, uv = terrGeo.attributes.uv, col = new Float32Array(P.count * 3), elev = new Float32Array(P.count), c = new THREE.Color(), c2 = new THREE.Color();
+  const RAMP = [[0, "#a9c6cf"], [1, "#d6dccb"], [120, "#bfcfae"], [400, "#93ad84"], [800, "#728c69"], [1200, "#8f8f86"], [1500, "#e2e2dc"]];
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), z = P.getZ(i), h = HGT[i];
+    uv.setXY(i, (x - T.bbox_x0) / (T.bbox_x1 - T.bbox_x0), 1 - (z - T.bbox_z0) / (T.bbox_z1 - T.bbox_z0));
+    elev[i] = Math.max(0, h); P.setY(i, Math.max(0, h));
+    let k = RAMP.length - 1; while (k > 0 && h < RAMP[k][0]) k--;
+    c.set(RAMP[k][1]); const nx = RAMP[Math.min(k + 1, RAMP.length - 1)]; if (nx[0] > RAMP[k][0]) c.lerp(c2.set(nx[1]), Math.min(1, Math.max(0, (h - RAMP[k][0]) / (nx[0] - RAMP[k][0]))));
+    if (h <= .5) c.set(RAMP[0][1]);
+    col.set([c.r, c.g, c.b], i * 3);
+  }
+  terrGeo.setAttribute("rampColor", new THREE.BufferAttribute(col, 3)); terrGeo.setAttribute("elev", new THREE.BufferAttribute(elev, 1));
+  terrGeo.computeVertexNormals();
+}
+const terrUni = { walkMap: { value: walkTex }, walkOn: { value: 1 } };
+const terrMat = new THREE.MeshLambertMaterial({ map: groundTex });
+terrMat.onBeforeCompile = sh => {
+  Object.assign(sh.uniforms, terrUni);
+  sh.vertexShader = "attribute vec3 rampColor; attribute float elev; varying vec3 vRamp; varying float vElev;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\n vRamp = rampColor; vElev = elev;");
+  sh.fragmentShader = "uniform sampler2D walkMap; uniform float walkOn; varying vec3 vRamp; varying float vElev;\n" + sh.fragmentShader.replace("#include <map_fragment>", `
+    #ifdef USE_MAP
+      bool inside = all(greaterThanEqual(vMapUv, vec2(0.0))) && all(lessThanEqual(vMapUv, vec2(1.0)));
+      vec3 ramp = pow(vRamp, vec3(2.2));
+      if (inside) { vec4 g = texture2D(map, vMapUv); vec4 w = texture2D(walkMap, vMapUv); g.rgb = mix(g.rgb, w.rgb, w.a * 0.55 * walkOn); diffuseColor.rgb *= mix(g.rgb, ramp, smoothstep(140.0, 420.0, vElev)); }
+      else { diffuseColor.rgb *= ramp; }
+    #endif`);
+};
+const terrain = new THREE.Mesh(terrGeo, terrMat); terrain.receiveShadow = true; scene.add(terrain);
+const sea = new THREE.Mesh(new THREE.PlaneGeometry(500000, 500000), new THREE.MeshLambertMaterial({ color: "#a9c6cf" })); sea.rotation.x = -Math.PI / 2; sea.position.y = -20; scene.add(sea);
+
+/* ---------- Buildings ---------- */
+const bOffsets = [];
+function buildingPts(bi) { let off = bOffsets[bi]; const k = BIN.getUint16(off, true), h = BIN.getUint16(off + 2, true) / 10; off += 4; const pts = []; for (let i = 0; i < k; i++) { pts.push(new THREE.Vector2(BIN.getInt16(off, true), BIN.getInt16(off + 2, true))); off += 4; } return { pts, h }; }
+function extrude(pts, h, pos, col, cBase, cTop) {
+  let base = Infinity, cx = 0, cz = 0; for (const p of pts) { base = Math.min(base, ground(p.x, p.y)); cx += p.x / pts.length; cz += p.y / pts.length; }
+  base -= 1; const top = ground(cx, cz) + h, k = pts.length;
+  for (let i = 0; i < k; i++) { const a = pts[i], c = pts[(i + 1) % k];
+    pos.push(a.x, base, a.y, c.x, base, c.y, c.x, top, c.y, a.x, base, a.y, c.x, top, c.y, a.x, top, a.y);
+    for (const t of [0, 0, 1, 0, 1, 1]) { const cc = t ? cTop : cBase; col.push(cc.r, cc.g, cc.b); } }
+  let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts, []); } catch { tris = []; }
+  for (const t of tris) for (const i of t) { pos.push(pts[i].x, top, pts[i].y); col.push(cTop.r, cTop.g, cTop.b); }
+}
+const city = (() => {
+  const n = BIN.getUint32(0, true); let off = 4; const pos = [], col = [], cBase = new THREE.Color("#aeb4b0"), cTop = new THREE.Color("#f7f6f1"), cTall = new THREE.Color("#e6ecef"), tmp = new THREE.Color();
+  for (let b = 0; b < n; b++) { bOffsets.push(off); const k = BIN.getUint16(off, true); off += 4 + 4 * k; const { pts, h } = buildingPts(b); extrude(pts, h, pos, col, cBase, tmp.copy(cTop).lerp(cTall, Math.min(h / 120, 1))); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); m.castShadow = true; m.receiveShadow = true; return m;
+})();
+scene.add(city);
+progress(.85, "Placing homes, schools and SkyTrain…");
+
+/* ---------- SkyTrain ---------- */
+const LINES = [["Waterfront", "Main St", "Commercial-Broadway", "Nanaimo", "29th Ave", "Joyce-Collingwood", "Patterson", "Metrotown", "Royal Oak", "Edmonds", "22nd St", "New Westminster", "Columbia", "Scott Rd"], ["Columbia", "Sapperton", "Braid", "Lougheed", "Production Way"], ["VCC-Clark", "Commercial-Broadway", "Renfrew", "Rupert", "Gilmore", "Brentwood", "Holdom", "Sperling", "Lake City", "Production Way", "Lougheed", "Burquitlam", "Moody Centre", "Inlet Centre", "Coquitlam Central", "Lincoln", "Lafarge Lake"], ["Waterfront", "Broadway-City Hall", "King Edward", "Oakridge", "Langara", "Marine Dr"]];
+const toXZ = (lat, lon) => [(lon - W.lon0) * W.mx, -(lat - W.lat0) * W.mz];
+const stXZ = n => DATA.stations[n] || (n === "Waterfront" ? toXZ(49.2856, -123.1115) : null);
+const sky = new THREE.Group();
+{ const rail = new THREE.MeshStandardMaterial({ color: "#35464f", roughness: .6, metalness: .2 }), stm = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: .5 });
+  for (const line of LINES) { const st = line.map(stXZ).filter(Boolean), pts = [];
+    for (let i = 1; i < st.length; i++) { const [ax, az] = st[i - 1], [bx, bz] = st[i], n = Math.max(1, Math.round(Math.hypot(bx - ax, bz - az) / 120)); for (let k = i === 1 ? 0 : 1; k <= n; k++) { const x = ax + (bx - ax) * k / n, z = az + (bz - az) * k / n; pts.push(new THREE.Vector3(x, ground(x, z) + 14, z)); } }
+    const path = new THREE.CurvePath(); for (let i = 1; i < pts.length; i++) path.add(new THREE.LineCurve3(pts[i - 1], pts[i]));
+    const m = new THREE.Mesh(new THREE.TubeGeometry(path, pts.length, 8, 6, false), rail); m.castShadow = true; sky.add(m); }
+  for (const [name, [x, z]] of Object.entries(DATA.stations)) { const m = new THREE.Mesh(new THREE.CylinderGeometry(34, 34, 20, 24), stm); m.position.set(x, ground(x, z) + 12, z); m.userData.station = name; m.castShadow = true; sky.add(m); } }
+scene.add(sky);
+
+/* ---------- Schools ---------- */
+const ratingCol = r => r == null ? "#8a9593" : r >= 7 ? "#1f7a64" : r >= 4 ? "#9aa5a3" : "#b0485a";
+const schoolGeo = new THREE.OctahedronGeometry(26, 0); schoolGeo.scale(1, 1.4, 1);
+const schools = new THREE.InstancedMesh(schoolGeo, new THREE.MeshStandardMaterial({ roughness: .4, metalness: .1 }), DATA.schools.length);
+function placeSchools(k = 1) {  // k grows with camera distance so diamonds stay readable from the overview
+  const m = new THREE.Matrix4(), c = new THREE.Color(), qq = new THREE.Quaternion(), p3 = new THREE.Vector3(), s3 = new THREE.Vector3();
+  DATA.schools.forEach((s, i) => { m.compose(p3.set(s.x, ground(s.x, s.z) + 55 * k, s.z), qq, s3.set(k, k, k)); schools.setMatrixAt(i, m); schools.setColorAt(i, c.set(ratingCol(s.rating))); });
+  schools.instanceMatrix.needsUpdate = true; if (schools.instanceColor) schools.instanceColor.needsUpdate = true;
+}
+placeSchools();
+scene.add(schools);
+
+/* ---------- Labels ---------- */
+function label(text, size = 1, color = "#23403c") {
+  const c = document.createElement("canvas"), x = c.getContext("2d"), f = 64; x.font = `800 ${f}px Bricolage Grotesque, Arial`; const w = x.measureText(text).width + 40;
+  c.width = w; c.height = f * 1.5; x.font = `800 ${f}px Bricolage Grotesque, Arial`; x.lineWidth = 11; x.strokeStyle = "rgba(255,255,255,.92)"; x.fillStyle = color; x.textBaseline = "middle"; x.strokeText(text, 20, c.height / 2); x.fillText(text, 20, c.height / 2);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true, sizeAttenuation: false })); const hh = .04 * size; s.scale.set(hh * w / c.height, hh, 1); s.renderOrder = 10; return s;
+}
+const labels = new THREE.Group();
+for (const [n, la, lo] of [["VANCOUVER", 49.262, -123.1], ["BURNABY", 49.245, -122.975], ["NEW WESTMINSTER", 49.207, -122.915], ["PORT MOODY", 49.295, -122.86], ["COQUITLAM", 49.275, -122.80], ["PORT COQUITLAM", 49.262, -122.755]]) { const s = label(n, 1), [x, z] = toXZ(la, lo); s.position.set(x, ground(x, z) + 400, z); labels.add(s); }
+for (const [n, la, lo] of [["Grouse Mountain", 49.3806, -123.0815], ["Mount Seymour", 49.3667, -122.9453], ["Burnaby Mountain", 49.2795, -122.918], ["Burke Mountain", 49.318, -122.728]]) { const s = label(n, .6, "#3e5a3a"), [x, z] = toXZ(la, lo); s.position.set(x, ground(x, z) + 220, z); labels.add(s); }
+for (const n of ["Metrotown", "Brentwood", "Lougheed", "Moody Centre", "Commercial-Broadway", "New Westminster", "Joyce-Collingwood", "Coquitlam Central", "Edmonds", "Oakridge", "Burquitlam"]) { if (!DATA.stations[n]) continue; const [x, z] = DATA.stations[n], s = label(n + " ◆", .5, "#35464f"); s.position.set(x, ground(x, z) + 110, z); labels.add(s); }
+scene.add(labels);
+
+/* ---------- Home beacons ---------- */
+const stemGeo = new THREE.CylinderGeometry(2.6, 2.6, 1, 8); stemGeo.translate(0, .5, 0);
+const capGeo = new THREE.SphereGeometry(15, 20, 14);
+const ringGeo = new THREE.TorusGeometry(24, 3.2, 8, 36); ringGeo.rotateX(Math.PI / 2);
+const keyGeo = new THREE.OctahedronGeometry(13, 0); keyGeo.scale(1, 1.5, 1);
+const stems = new THREE.InstancedMesh(stemGeo, new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: .5 }), H.length);
+const caps = new THREE.InstancedMesh(capGeo, new THREE.MeshStandardMaterial({ roughness: .35, metalness: .05, emissive: "#000000" }), H.length);
+const rings = new THREE.InstancedMesh(ringGeo, new THREE.MeshStandardMaterial({ color: "#22614f", roughness: .4, emissive: "#0d3a2e", emissiveIntensity: .6 }), H.length);
+const badges = new THREE.InstancedMesh(keyGeo, new THREE.MeshStandardMaterial({ color: "#d9a441", roughness: .25, metalness: .7, emissive: "#6b4a10", emissiveIntensity: .5 }), H.length);
+for (const m of [stems, caps, rings, badges]) { m.castShadow = true; scene.add(m); }
+const WALK_STEPS = [[90, "#0b5d55"], [75, "#138a7e"], [60, "#4fb3a6"], [40, "#9fd6cd"], [0, "#dcefeb"]];
+const LENSES = {
+  score: { name: "Our score", col: h => { const s = score(h); return s >= 85 ? "#0f6b5c" : s >= 78 ? "#2f8f79" : s >= 70 ? "#86b9a8" : "#c8d2cf"; }, legend: [["#0f6b5c", "85+ great fit"], ["#2f8f79", "78–84"], ["#86b9a8", "70–77"], ["#c8d2cf", "under 70"]], rank: h => score(h) },
+  value: { name: "Value", col: h => h.g <= -10 ? "#0e7c70" : h.g <= -5 ? "#7cc2b8" : h.g < 5 ? "#b8c0bf" : "#b0485a", legend: [["#0e7c70", "10%+ below similar homes"], ["#7cc2b8", "5–10% below"], ["#b8c0bf", "about fair"], ["#b0485a", "5%+ above"]], rank: h => -h.g },
+  school: { name: "Schools", col: h => ratingCol(h.er), legend: [["#1f7a64", "School 7+/10"], ["#9aa5a3", "4–7"], ["#b0485a", "under 4"]], rank: h => h.er ?? -1 },
+  walk: { name: "Walking", col: h => WALK_STEPS.find(([t]) => (h.w ?? 0) >= t)[1], legend: WALK_STEPS.map(([t, c]) => [c, t ? `walk score ${t}+` : "under 40"]), rank: h => h.w ?? 0 },
+  cost: { name: "Monthly", col: h => { const m = monthly(h).total; return m < 4200 ? "#0f6b5c" : m < 5000 ? "#2f8f79" : m < 5800 ? "#e0b458" : "#b0485a"; }, legend: [["#0f6b5c", "under $4,200/mo"], ["#2f8f79", "$4,200–5,000"], ["#e0b458", "$5,000–5,800"], ["#b0485a", "over $5,800"]], rank: h => -monthly(h).total },
+  age: { name: "Age", col: h => h.y == null ? "#c9cfce" : h.y >= 2015 ? "#1c5cab" : h.y >= 2000 ? "#86b6ef" : h.lk ? "#e9a23b" : "#9b6a3c", legend: [["#1c5cab", "2015+"], ["#86b6ef", "2000–2014"], ["#e9a23b", "1983–99 leaky era"], ["#9b6a3c", "older"], ["#c9cfce", "unknown"]], rank: h => h.y ?? 0 },
+};
+const hidden = new THREE.Matrix4().makeScale(0, 0, 0), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), pv = new THREE.Vector3(), cc = new THREE.Color();
+let hoverIdx = -1;
+let beaconScale = 1;  // grows with camera distance so beacons stay readable from the overview
+function capY(h) { return ground(h.x, h.z) + (40 + Math.max(0, score(h) - 55) * 3.2) * Math.max(1, beaconScale * .55); }
+function refreshBeacons() {
+  const lens = LENSES[S.lens];
+  H.forEach((h, i) => {
+    if (!visible(h) && S.sel !== h) { for (const m of [stems, caps, rings, badges]) m.setMatrixAt(i, hidden); return; }  // the open home always shows
+    const g = ground(h.x, h.z), top = capY(h), st = status(h), big = ((i === hoverIdx || S.sel === h) ? 1.45 : st === "pass" ? .6 : 1) * beaconScale;
+    m4.compose(pv.set(h.x, g, h.z), q.identity(), sc.set(beaconScale, top - g, beaconScale)); stems.setMatrixAt(i, m4);
+    m4.compose(pv.set(h.x, top, h.z), q, sc.set(big, big, big)); caps.setMatrixAt(i, m4);
+    caps.setColorAt(i, cc.set(st === "pass" ? "#9aa3a1" : lens.col(h)));
+    rings.setMatrixAt(i, st === "mine" || st === "both" ? m4.compose(pv.set(h.x, top, h.z), q, sc.set(big, big, big)) : hidden);
+    badges.setMatrixAt(i, st === "both" ? m4.compose(pv.set(h.x, top + 34 * big, h.z), q, sc.set(big, big, big)) : hidden);
+  });
+  for (const m of [stems, caps, rings, badges]) m.instanceMatrix.needsUpdate = true; if (caps.instanceColor) caps.instanceColor.needsUpdate = true;
+}
+
+/* ---------- Selection highlight: the actual building, lit in brass ---------- */
+const hlMat = new THREE.MeshStandardMaterial({ color: "#d9a441", roughness: .45, metalness: .25, emissive: "#8a5d12", emissiveIntensity: .6, vertexColors: true, side: THREE.DoubleSide });
+let highlight = null, priceTag = null;
+function setHighlight(h) {
+  if (highlight) { scene.remove(highlight); highlight.geometry.dispose(); highlight = null; }
+  if (priceTag) { scene.remove(priceTag); priceTag = null; }
+  if (!h) return;
+  const pos = [], col = [], w1 = new THREE.Color("#f7e3b0"), w2 = new THREE.Color("#ffffff");
+  if (h.bi >= 0) { const { pts, h: bh } = buildingPts(h.bi); const c = pts.reduce((a, p) => a.add(p), new THREE.Vector2()).multiplyScalar(1 / pts.length);
+    const grown = pts.map(p => { const d = p.clone().sub(c), L = d.length() || 1; return c.clone().add(d.multiplyScalar((L + 1.6) / L)); }); extrude(grown, Math.max(bh, h.fh || 0) + 2.2, pos, col, w1, w2); }
+  else { // a small house model where the listing stands (detached homes are drawn flat on the map)
+    const s = h.t === "House" ? 9 : 7, pts = [[-s, -s], [s, -s], [s, s], [-s, s]].map(([a, b]) => new THREE.Vector2(h.x + a, h.z + b)); extrude(pts, h.t === "Condo" ? 30 : 9, pos, col, w1, w2); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
+  highlight = new THREE.Mesh(g, hlMat); highlight.castShadow = true; scene.add(highlight);
+  priceTag = label(`${fmtK(h.p)}  ·  ${score(h)}`, .55, "#6b4a10"); priceTag.position.set(h.x, capY(h) + 60 * beaconScale, h.z); scene.add(priceTag);
+}
+
+/* ---------- Camera ---------- */
+let fly = null;
+function flyTo(x, z, dist, tilt = .95, az = null, dur = 1400) {
+  const y = ground(x, z), target = new THREE.Vector3(x, y, z);
+  const a = az ?? (Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) || .4);
+  const pos = new THREE.Vector3(x + Math.sin(a) * dist * Math.sin(tilt), y + dist * Math.cos(tilt) + dist * .12, z + Math.cos(a) * dist * Math.sin(tilt));
+  fly = { t0: performance.now(), dur, fromT: controls.target.clone(), toT: target, fromP: camera.position.clone(), toP: pos };
+}
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+/* ---------- UI: rail ---------- */
+function renderRail() {
+  if (PUBLIC) { $("#legend").innerHTML = `<span class="lab" style="margin:0">Schools (diamonds)</span><span><i style="background:#1f7a64;border-radius:2px;transform:rotate(45deg)"></i>Rated 7–10 out of 10</span><span><i style="background:#9aa5a3;border-radius:2px;transform:rotate(45deg)"></i>4–7</span><span><i style="background:#b0485a;border-radius:2px;transform:rotate(45deg)"></i>Under 4</span><span><i style="background:#8a9593;border-radius:2px;transform:rotate(45deg)"></i>Not rated (secondary, or too few writers)</span><span class="lab" style="margin:8px 0 0">Walkability</span><span><i style="background:linear-gradient(90deg,#dcefeb,#0b5d55);width:60px;border-radius:3px"></i>teal glow: groceries, parks, transit within a short walk</span>`; return; }
+  $("#lenses").innerHTML = Object.entries(LENSES).map(([k, l]) => `<button data-lens="${k}" aria-pressed="${S.lens === k}">${l.name}</button>`).join("");
+  $("#legend").innerHTML = LENSES[S.lens].legend.map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join("") + `<span><i style="background:transparent;border:3px solid #22614f"></i>Ring: you turned your key</span><span><i style="background:#d9a441;border-radius:2px;transform:rotate(45deg)"></i>Gold: you both did</span><span><i style="background:#1f7a64;border-radius:2px;transform:rotate(45deg) scale(.8)"></i>Diamond: school (colour = rating)</span>`;
+  $("#types").innerHTML = ["Condo", "Townhouse", "House"].map(t => `<button class="toggle" data-type="${t}" aria-pressed="${S.house.types.includes(t)}">${typeName(t)}</button>`).join("");
+  $("#f-max").value = S.house.maxPrice; $("#l-pass").checked = S.showPassed;
+  const list = H.filter(visible).sort((a, b) => LENSES[S.lens].rank(b) - LENSES[S.lens].rank(a)).slice(0, 8);
+  $("#top-title").textContent = `Best by ${LENSES[S.lens].name.toLowerCase()}`;
+  $("#top").innerHTML = list.map(h => `<button data-open="${esc(h.k)}"><span class="badge" style="background:${LENSES[S.lens].col(h)}">${score(h)}</span><span>${esc(h.a)}<br><span class="tiny muted">${esc(h.n)} · ${typeName(h.t)}</span></span><span class="num tiny">${fmtK(h.p)}</span></button>`).join("") || `<span class="small muted">No homes match. Raise the max price or add types.</span>`;
+}
+
+/* ---------- UI: home card ---------- */
+const ICON = {
+  key: `<svg viewBox="0 0 34 22" aria-hidden="true"><g class="keyturn" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="9" cy="11" r="6"/><path d="M15 11h16m-5 0v5m4-5v4"/></g></svg>`,
+  maybe: `<svg viewBox="0 0 34 22" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7a5 5 0 1 1 6 5c-1 .4-1 1.2-1 2.4"/><circle cx="17" cy="19" r=".6" fill="currentColor"/></g></svg>`,
+  pass: `<svg viewBox="0 0 34 22" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M11 5l12 12M23 5L11 17"/></g></svg>`,
+  lock: `<svg width="18" height="18" viewBox="0 0 38 38" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><rect x="9" y="17" width="20" height="15" rx="3"/><path d="M13 17v-4a6 6 0 0 1 12 0v4"/></g></svg>`,
+  space: `<svg viewBox="0 0 26 26"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="20" height="20" rx="2"/><path d="M3 12h9v11M12 3v5"/></g></svg>`,
+  school: `<svg viewBox="0 0 26 26"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 10 13 4l11 6-11 6z"/><path d="M6 12v6c4 3 10 3 14 0v-6"/></g></svg>`,
+  walk: `<svg viewBox="0 0 26 26"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="14" cy="4" r="2"/><path d="M13 8l-3 7 4 3 1 6M13 8l4 5 4 1M10 15l-3 7"/></g></svg>`,
+  train: `<svg viewBox="0 0 26 26"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="3" width="14" height="15" rx="3"/><path d="M6 11h14M9 22l2-4m6 4-2-4"/></g></svg>`,
+  build: `<svg viewBox="0 0 26 26"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M4 23V9l9-5 9 5v14z"/><path d="M10 23v-7h6v7"/></g></svg>`,
+  pin: `<svg viewBox="0 0 26 26"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M13 24s8-7 8-13a8 8 0 0 0-16 0c0 6 8 13 8 13z"/><circle cx="13" cy="11" r="3"/></g></svg>`,
+};
+function reasons(h) {
+  const yes = [], no = [], m = monthly(h);
+  if (h.g <= -10) yes.push(`Asks about ${Math.abs(Math.round(h.g))}% less than similar homes nearby.`);
+  if (h.hr) yes.push(`Hermes ranks it #${h.hr} on its shortlist.`);
+  if (h.cu > 0) yes.push(`The seller already cut the price (${pct(h.cp, 1)}).`);
+  if (h.er != null && h.er >= 7) yes.push(`${h.es} rates ${h.er.toFixed(1)}/10.`);
+  if (h.w >= 85) yes.push(`Very walkable: ${h.wg || "several"} grocery stores and ${h.wp || "many"} parks within 10 minutes.`);
+  if (h.skm != null && h.skm <= .8) yes.push(`${walkMin(h.skm)} min walk to ${h.stn} SkyTrain.`);
+  if (h.at.SPC >= 85) yes.push(`Roomy: ${h.sq.toLocaleString()} sqft.`);
+  if (h.y && h.y >= 2015) yes.push(`Built ${h.y}, so fewer big repairs coming.`);
+  if (h.g >= 8) no.push(`Asks about ${Math.round(h.g)}% more than similar homes.`);
+  if (h.lk) no.push(`Built ${h.y}, the leaky-condo era. Ask for proof the envelope was fixed.`);
+  if (h.fl.includes("resale not established")) no.push("Might be a presale or assignment.");
+  if (h.fl.includes("third-bedroom integrity conflict")) no.push("The third bedroom may really be a den.");
+  if (/Leasehold/.test(h.ten || "")) no.push("Leasehold: you don't own the land.");
+  if (h.er != null && h.er < 4) no.push(`${h.es} rates only ${h.er.toFixed(1)}/10.`);
+  if (!h.ec && h.es) no.push("School catchment not confirmed (nearest school shown).");
+  if (h.w != null && h.w < 55) no.push("Car-dependent: most errands need a drive.");
+  if (h.band === "comparison") no.push(`Above our $1.2M ceiling.`);
+  if (m.partial) no.push("Some monthly costs are missing, so the monthly figure is a minimum.");
+  if (h.card) no.push("Only the listing card has been read. Details unverified.");
+  return { yes: yes.slice(0, 4), no: no.slice(0, 4) };
+}
+function introCard() {
+  const p = partnerId(), inS = H.filter(inScope), mine = inS.filter(h => !voteOf(myId(), h.k)).length, both = H.filter(h => status(h) === "both").length;
+  const scan = new Date(DATA.scan + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric" });
+  return `<div class="intro"><div class="eyebrow">Listings as of ${esc(scan)}</div>
+    <div class="big">${esc(first(myId()) === "You" ? "Hello." : "Hi " + first(myId()) + ".")} ${both ? `You both love ${both} home${both === 1 ? "" : "s"}.` : `${mine} homes to look at.`}</div>
+    <div class="stats3"><div class="stat"><b class="num" style="color:var(--pine)">${both}</b><span>both keys turned</span></div><div class="stat"><b class="num">${mine}</b><span>left for you</span></div><div class="stat"><b class="num">${inS.length}</b><span>in our range</span></div></div>
+    <p class="small muted">Every beacon is a home for sale. Taller and darker means a better fit for our priorities. Tap one to see it, and its building lights up in brass. ${p ? "" : "Invite your partner from the Share menu (as Editor) so both keys count."}</p>
+    <div class="row"><button class="btn primary" data-mode-go="tour">Start the tour</button><button class="btn" data-mode-go="report">Read the report</button></div></div>`;
+}
+function homeCard(h) {
+  const m = monthly(h), r = reasons(h), mine = voteOf(myId(), h.k), p = partnerId(), theirs = p ? voteOf(p, h.k) : null, st = status(h);
+  const facts = [[ICON.space, `${h.sq.toLocaleString()} sqft · ${h.b} bed${h.ba ? ` · ${h.ba} bath` : ""}`, typeName(h.t)],
+    [ICON.school, h.es ? `${esc(h.es)}${h.er != null ? ` · ${h.er.toFixed(1)}/10` : ""}` : "School not found", h.es ? `${h.ek ?? "?"} km · ${h.ec ? "catchment" : "nearest"}${h.fr ? " · French imm." : ""}` : ""],
+    [ICON.walk, `Walk score ${Math.round(h.w)}`, `${h.wg ?? 0} grocery · ${h.wp ?? 0} parks · ${h.wc ?? 0} daycares nearby`],
+    [ICON.train, `${esc(h.stn || "SkyTrain")}`, h.skm != null ? `${walkMin(h.skm)} min walk` : ""],
+    [ICON.build, h.y ? `Built ${h.y}` : "Year unknown", `${h.lx ? h.lx + " finish" : "finish not scored"}${h.lk ? " · leaky era" : ""}`],
+    [ICON.pin, `${esc(h.lt)} location`, `${esc(h.n)} · ${pct(h.lp)}`]];
+  let partner;
+  if (!p) partner = `<div class="partner-box"><div class="who">${ICON.lock} Your partner's key</div><span class="small muted">Shows here once they open Two Keys and vote.</span></div>`;
+  else if (!mine) partner = `<div class="partner-box"><div class="who">${ICON.lock} ${esc(first(p))}'s key is sealed</div><span class="small muted">${theirs ? "They've voted." : "They haven't seen it yet."} You'll see it after you vote.</span></div>`;
+  else if (!theirs) partner = `<div class="partner-box"><div class="who">${faceHTML(p)} ${esc(first(p))} hasn't seen this one yet</div></div>`;
+  else partner = `<div class="partner-box ${st === "both" ? "both" : ""}"><div class="who">${faceHTML(p)} ${esc(first(p))}: <span class="vote-dot ${theirs.v}">${{ love: "Turned the key", maybe: "Maybe", pass: "Not for us" }[theirs.v]}</span></div><span class="small pnote"></span>${st === "both" ? `<b style="color:var(--pine)">Both keys turned. It's in Our picks.</b>` : ""}</div>`;
+  const plan = st === "both" ? planBlock(h) : "";
+  return `<div class="home-head"><div style="display:grid;gap:6px"><div class="row" style="gap:5px">${h.hr ? `<span class="pill good">Hermes #${h.hr}</span>` : ""}${h.cu ? `<span class="pill good">Price cut ${pct(h.cp, 1)}</span>` : ""}${h.band === "comparison" ? `<span class="pill warn">Above $1.2M</span>` : ""}${h.card ? `<span class="pill">Card facts only</span>` : ""}</div>
+      <h2>${esc(h.a)}</h2><span class="small muted">${esc(h.n)}, ${esc(h.c)} · ${typeName(h.t)}</span></div><button class="xbtn" id="card-x" aria-label="Close">×</button></div>
+    <div><div class="price-line"><span class="ask num">${fmtK(h.p)}</span><span class="mo">≈ ${fmt$(m.total)}/mo${m.partial ? "+" : ""}</span></div>
+      <div class="small">${h.g <= -10 ? `<span class="verdict good">${Math.abs(Math.round(h.g))}% below similar homes</span>` : h.g >= 8 ? `<span class="verdict bad">${Math.round(h.g)}% above similar homes</span>` : `<span class="verdict">In line with similar homes</span>`} <span class="muted">· ${fmt$(m.cash)} down</span></div></div>
+    <div class="attrs">${ATTRS.map(([k]) => `<div><b>${h.at[k]}</b>${k}</div>`).join("")}</div>
+    <div class="vote-row"><button class="vote love" data-vote="love" aria-pressed="${mine?.v === "love"}">${ICON.key}Turn my key<kbd>→</kbd></button><button class="vote maybe" data-vote="maybe" aria-pressed="${mine?.v === "maybe"}">${ICON.maybe}Maybe<kbd>↑</kbd></button><button class="vote pass" data-vote="pass" aria-pressed="${mine?.v === "pass"}">${ICON.pass}Not for us<kbd>←</kbd></button></div>
+    <textarea id="note" aria-label="A note for us" placeholder="A note for us: loved the layout, worried about the busy street…">${esc(mine?.note || "")}</textarea>
+    ${partner}${plan}
+    <div class="facts">${facts.map(([ic, b, s]) => `<div class="fact">${ic}<div><b>${b}</b><span>${s}</span></div></div>`).join("")}</div>
+    <div class="reasons">${r.yes.length ? `<div class="yes"><h3>Why it could work</h3><ul>${r.yes.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}${r.no.length ? `<div class="no"><h3>Watch out for</h3><ul>${r.no.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}</div>
+    ${h.fh ? `<p class="tiny muted">The map has no height for this building, so the brass tower is drawn from the unit number (floor ${h.floor}), about ${h.fh} m.</p>` : h.bi < 0 ? `<p class="tiny muted">The brass block marks the listing's location. ${h.t === "House" ? "Houses are drawn flat on the map." : "This building isn't in the 3D map yet."}</p>` : ""}
+    <div class="row"><a class="btn" href="${esc(h.u)}" target="_blank" rel="noopener">Photos and listing</a><button class="btn" id="orbit">Orbit</button></div>`;
+}
+function planBlock(h) { const pl = planOf(h.k); return `<div style="display:grid;gap:8px" data-plan="${esc(h.k)}"><span class="lab" style="margin:0">Our next steps</span><div class="steps">${STEPS.map(([s, t]) => `<label class="step ${pl.steps?.[s] ? "done" : ""}"><input type="checkbox" data-step="${s}" ${pl.steps?.[s] ? "checked" : ""}><span>${esc(t)}</span></label>`).join("")}</div><input type="date" data-date value="${esc(pl.date || "")}" aria-label="Viewing date"></div>`; }
+function schoolCard(s) {
+  const near = PUBLIC ? [] : H.filter(h => h.es === s.name);
+  return `<div class="school-card"><div class="home-head"><div><div class="eyebrow">${s.level === "sec" ? "Secondary school" : "Elementary school"}</div><h2>${esc(s.name)}</h2></div><button class="xbtn" id="card-x" aria-label="Close">×</button></div>
+    <div class="big" style="color:${ratingCol(s.rating)}">${s.rating != null ? s.rating.toFixed(1) + "/10" : "Not rated"}</div>
+    <p class="small muted">${s.level === "sec" ? "BC's Foundation Skills Assessment is written in Grades 4 and 7 only, so secondary schools aren't rated." : "Where this school's Grade 4 and 7 Foundation Skills Assessment results (2023–2026) rank among Metro Vancouver public schools. 10 means top 10%. Participation varies, so read it as a comparison, not a verdict."}${s.french ? " Offers French immersion." : ""}</p>
+    ${near.length ? `<p class="small">${near.length} of our listings use this school.</p>` : ""}</div>`;
+}
+function aboutCard() {
+  return `<div class="intro"><div class="eyebrow">Open data, rebuilt in 3D</div><div class="big">East Metro in 3D</div>
+    <p class="small">Vancouver, Burnaby, New Westminster and the Tri-Cities with real terrain, ${BIN.getUint32(0, true).toLocaleString()} buildings, SkyTrain, every public school coloured by its test-score rating, and a walkability glow. Tap a school diamond for details. Drag to move, right-drag or two fingers to tilt, scroll or pinch to zoom.</p>
+    <p class="tiny muted">Sources: buildings, roads, parks and amenities © OpenStreetMap contributors (ODbL). Land from ParcelMap BC, school locations and FSA results from the BC Data Catalogue (Open Government Licence – British Columbia). Terrain from Terrain Tiles on AWS (Canadian Digital Elevation Model, SRTM). Walkability and school ratings are our own calculations from those sources. Building heights are estimates where OpenStreetMap has none.</p></div>`;
+}
+function renderCard() {
+  const el = $("#card-in");
+  el.innerHTML = S.selSchool ? schoolCard(S.selSchool) : S.sel ? homeCard(S.sel) : PUBLIC ? aboutCard() : introCard();
+  const pn = el.querySelector(".pnote"), p = partnerId(); if (pn && S.sel) { const t = voteOf(p, S.sel.k); pn.textContent = t?.note ? "“" + t.note + "”" : ""; }
+}
+function select(h, fly = true) {
+  S.sel = h; S.selSchool = null; setHighlight(h); refreshBeacons(); renderCard();
+  if (h && fly) flyTo(h.x, h.z, S.mode === "tour" ? 900 : 1300, .98);
+  if (innerWidth <= 820) { $("#card").hidden = false; $("#rail").hidden = true; }
+  frameView();
+}
+
+/* ---------- Voting & tour ---------- */
+function tourList() { return H.filter(h => inScope(h) && !voteOf(myId(), h.k)).sort((a, b) => score(b) - score(a)); }
+function castVote(v) {
+  const h = S.sel; if (!h) return;
+  const note = $("#note")?.value.trim() || "";
+  myVotes()[h.k] = { v, note, at: new Date().toISOString() };
+  const id = myId(); queueWrite(`votes/${id}`, () => ({ votes: S.votes[id] || {}, updated: new Date().toISOString() }));
+  const p = partnerId(); toast(v === "love" && voteOf(p, h.k)?.v === "love" ? `Both keys turned on ${h.a}.` : { love: "Key turned.", maybe: "Saved as maybe.", pass: "Passed." }[v]);
+  if (S.mode === "tour") { const list = tourList(); S.tourIdx = Math.min(S.tourIdx, Math.max(0, list.length - 1)); renderTour(); if (list[S.tourIdx]) select(list[S.tourIdx]); else { select(h, false); } }
+  else select(h, false);
+  renderCounts(); renderRail();
+}
+function renderTour() {
+  const list = tourList(), total = H.filter(inScope).length, done = total - list.length;
+  $("#tour").hidden = S.mode !== "tour";
+  $("#t-label").textContent = list.length ? `Home ${Math.min(S.tourIdx + 1, list.length)} of ${list.length} left · ${done} reviewed` : "You've reviewed every home in range";
+  $("#t-prog").style.width = (total ? done / total * 100 : 0) + "%";
+}
+
+/* ---------- Sheets ---------- */
+function planOf(k) { return S.plans[k] || { steps: {}, date: "", notes: "" }; }
+function savePlan(k, patch) { S.plans[k] = { ...planOf(k), ...patch }; queueWrite(`plans/${k}`, () => S.plans[k]); }
+function noteBlock(id, h) { const v = voteOf(id, h.k); return `<div class="note" style="--c:${colorOf(id)}"><div class="who">${esc(first(id))} <span class="vote-dot ${v ? v.v : "none"}">${v ? { love: "Key turned", maybe: "Maybe", pass: "Not for us" }[v.v] : "not yet"}</span></div><div class="nt" data-id="${esc(id)}" data-k="${esc(h.k)}"></div></div>`; }
+function renderPicks() {
+  const me = myId(), p = partnerId(), both = H.filter(h => status(h) === "both"), mine = H.filter(h => voteOf(me, h.k)?.v === "love" && status(h) !== "both");
+  const split = p ? H.filter(h => { const a = voteOf(me, h.k)?.v, b = voteOf(p, h.k)?.v; return a && b && a !== b && (a === "love" || b === "love"); }) : [];
+  const pick = h => { const pl = planOf(h.k), m = monthly(h), done = STEPS.filter(([s]) => pl.steps?.[s]).length; return `<article class="pick" data-plan="${esc(h.k)}"><div class="pick-head"><span class="badge" style="background:#d9a441;height:30px;min-width:30px">★</span><div><h3>${esc(h.a)}</h3><span class="small muted">${esc(h.n)} · ${fmtK(h.p)} · ≈${fmt$(m.total)}/mo</span></div><span class="pill good">${done}/${STEPS.length}</span></div>
+    <div class="two-notes">${noteBlock(me, h)}${p ? noteBlock(p, h) : ""}</div>
+    <div class="steps">${STEPS.map(([s, t]) => `<label class="step ${pl.steps?.[s] ? "done" : ""}"><input type="checkbox" data-step="${s}" ${pl.steps?.[s] ? "checked" : ""}><span>${esc(t)}</span></label>`).join("")}</div>
+    <div class="settings-grid"><div><span class="lab">Viewing date</span><input type="date" data-date value="${esc(pl.date || "")}"></div><div><span class="lab">Shared notes</span><textarea data-notes>${esc(pl.notes || "")}</textarea></div></div>
+    <div class="row"><button class="btn primary" data-open="${esc(h.k)}">Show on the map</button><a class="btn" href="${esc(h.u)}" target="_blank" rel="noopener">Listing</a></div></article>`; };
+  const rows = list => list.map(h => `<div class="row-home"><div><b>${esc(h.a)}</b><div class="small muted">${esc(h.n)} · ${fmtK(h.p)}</div><div class="two-notes" style="margin-top:6px">${noteBlock(me, h)}${p ? noteBlock(p, h) : ""}</div></div><button class="btn" data-open="${esc(h.k)}">Map</button></div>`).join("");
+  $("#sheet-in").innerHTML = `<div class="eyebrow">Our picks</div><h2>${both.length ? `${both.length} home${both.length === 1 ? "" : "s"} you both love` : p ? "No shared favourites yet" : "Your favourites so far"}</h2>
+    <p class="muted">${both.length ? "Work through the next steps together. Ticks, dates and notes save for both of you." : p ? "A home lands here the moment you both turn your key." : "Once your partner votes, homes you both love show here with a shared checklist."}</p>
+    ${both.map(pick).join("")}
+    ${!p && mine.length ? rows(mine) : ""}
+    ${split.length ? `<div class="eyebrow" style="margin-top:8px">Talk about these</div><h3>One of you loves it, the other doesn't</h3>${rows(split)}` : ""}
+    ${p && mine.length ? `<div class="eyebrow" style="margin-top:8px">Waiting for ${esc(first(p))}</div>${rows(mine.filter(h => !voteOf(p, h.k)))}` : ""}`;
+  $("#sheet-in").querySelectorAll(".nt").forEach(el => { el.textContent = voteOf(el.dataset.id, el.dataset.k)?.note || ""; });
+}
+function hexChart(ws) { const c = 150, R = 100, n = ATTRS.length, pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n, r = v / 10 * R; return [c + r * Math.cos(a), c + r * Math.sin(a)]; }; let g = ""; for (const v of [2.5, 5, 7.5, 10]) g += `<polygon points="${ATTRS.map((_, i) => pt(i, v).join(",")).join(" ")}" fill="none" stroke="var(--line)"/>`; ATTRS.forEach(([k, name], i) => { const [x, y] = pt(i, 10), [lx, ly] = pt(i, 12.8); g += `<line x1="${c}" y1="${c}" x2="${x}" y2="${y}" stroke="var(--line)"/><text x="${lx}" y="${ly + 4}" text-anchor="middle">${name}</text>`; }); for (const [w, col] of ws) g += `<polygon points="${ATTRS.map(([k], i) => pt(i, w[k]).join(",")).join(" ")}" fill="${col}" fill-opacity=".18" stroke="${col}" stroke-width="2.5"/>`; return `<svg class="hex" viewBox="-50 -10 400 320" role="img" aria-label="Both of your priorities">${g}</svg>`; }
+function renderPrio() {
+  const me = myId(), p = partnerId(), mw = weightsOf(me) || DEFAULT_W, pw = p ? weightsOf(p) : null, cities = [...new Set(H.map(h => h.c))].sort();
+  const agree = pw ? ATTRS.map(([k, n]) => [n, Math.abs(mw[k] - pw[k])]).sort((a, b) => a[1] - b[1]) : null;
+  $("#sheet-in").innerHTML = `<div class="eyebrow">What matters</div><h2>Your priorities shape the city</h2><p class="muted">Each of you sets your own. Beacon height and the tour order use the average of both.</p>
+    <div class="prio"><div style="display:grid;gap:12px">${ATTRS.map(([k, n]) => `<div class="slider"><div class="top"><label for="w-${k}">${n}</label><b class="num" id="wv-${k}">${mw[k]}</b></div><input type="range" id="w-${k}" min="0" max="10" step="1" value="${mw[k]}" data-w="${k}">${pw ? `<span class="theirs">${esc(first(p))}: ${pw[k]}</span>` : ""}</div>`).join("")}</div>
+      <div style="display:grid;gap:10px;justify-items:center;align-content:start">${hexChart([[mw, colorOf(me)], ...(pw ? [[pw, colorOf(p)]] : [])])}${agree ? `<p class="small">You agree most on <b>${agree[0][0].toLowerCase()}</b> and differ most on <b>${agree[agree.length - 1][0].toLowerCase()}</b>.</p>` : `<p class="small muted">Your partner's shape appears once they set theirs.</p>`}</div></div>
+    <h3>Our search, shared</h3>
+    <div class="settings-grid"><div><label class="lab" for="h-max">Max price</label><input type="number" id="h-max" step="25000" value="${S.house.maxPrice}"></div><div><label class="lab" for="h-down">Down payment %</label><input type="number" id="h-down" value="${S.house.down}"></div><div><label class="lab" for="h-rate">Mortgage rate %</label><input type="number" id="h-rate" step="0.05" value="${S.house.rate}"></div><div><label class="lab" for="h-amort">Amortization (years)</label><input type="number" id="h-amort" value="${S.house.amort}"></div></div>
+    <div><span class="lab">Cities (none = all)</span><div class="chips">${cities.map(c => `<button class="toggle" data-hcity="${esc(c)}" aria-pressed="${S.house.cities.includes(c)}">${esc(c)}</button>`).join("")}</div></div>
+    <label class="check"><input type="checkbox" id="h-hide" ${S.house.hideRestricted ? "checked" : ""}> Hide leasehold, presales, age-restricted and den-as-bedroom listings</label>
+    <p class="tiny muted">The mortgage rate is a placeholder. Use your broker's quote.</p>`;
+}
+function renderReport() {
+  const g = (a, t) => DATA.gvr.find(x => x.area === a && x.property_type === t), gv = ["apartment", "townhouse", "detached"].map(t => [t, g("Greater Vancouver", t)]).filter(x => x[1]);
+  const areas = [...DATA.areas].sort((a, b) => a.premium - b.premium), rents = Object.entries(DATA.rents).sort((a, b) => b[1].median - a[1].median);
+  const inS = H.filter(inScope), deals = inS.filter(h => h.g <= -10 && !h.rs), span = Math.max(...areas.map(a => Math.abs(a.premium)), 10);
+  const top = [...deals].sort((a, b) => score(b) - score(a)).slice(0, 4);
+  $("#sheet-in").innerHTML = `<article class="letter"><div class="eyebrow">The report · ${esc(new Date(DATA.scan + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" }))}</div>
+    <h2>Where the market is, and where our best options are</h2>
+    <p>It's a buyer's market. The typical Greater Vancouver ${gv.map(([t, r]) => `${t === "apartment" ? "condo" : t} is down ${Math.abs(r.pct_1y).toFixed(1)}%`).join(", ")} over the past year. Offering below asking is normal right now.</p>
+    <p class="pull">${deals.length} of the ${inS.length} homes in our range ask at least 10% less than similar homes nearby.</p>
+    <p>Each home is compared with others of the same size, age, type and neighbourhood. A gap of 10% or more is worth a closer look. The comparison is usually within about ${Math.round(DATA.model.sigma)}%, so smaller gaps are noise.</p>
+    <h3>Where you pay for the address</h3>
+    <div class="bars">${areas.map(a => `<div class="bar"><span>${esc(a.area)}</span><em><i style="left:${a.premium < 0 ? 50 - Math.abs(a.premium) / span * 50 : 50}%;width:${Math.abs(a.premium) / span * 50}%;background:${a.premium < 0 ? "var(--pine)" : "var(--rose)"}"></i></em><span class="num">${pct(a.premium)}</span></div>`).join("")}</div>
+    <p>For the same home, ${esc(areas[areas.length - 1].area)} costs the most and ${esc(areas[0].area)} the least. The most sought-after neighbourhoods are ${DATA.nb_top.slice(0, 3).map(n => esc(n.neighbourhood)).join(", ")}. The best value is in ${DATA.nb_bottom.slice(-3).map(n => esc(n.neighbourhood)).join(", ")}.</p>
+    <h3>Owning versus renting</h3>
+    <p>A typical 3-bedroom rents for ${rents.map(([c, r]) => `${fmt$(r.median)} in ${esc(c)}`).join(", ")} a month. Owning usually costs more each month. It pays off through the principal we pay down and long-run appreciation, so plan to stay five to seven years.</p>
+    ${top.length ? `<h3>Four to look at first</h3>${top.map(h => `<div class="row-home"><div><b>${esc(h.a)}</b><div class="small muted">${esc(h.n)} · ${fmtK(h.p)} · ${Math.abs(Math.round(h.g))}% below similar homes${h.er ? ` · school ${h.er.toFixed(1)}/10` : ""}</div></div><button class="btn" data-open="${esc(h.k)}">Show on map</button></div>`).join("")}` : ""}
+    <p class="small muted">These are asking prices, not sale prices. ${DATA.sources.research_listings} homes come from Hermes's detailed research and ${DATA.sources.inventory_listings} from its wider inventory. Before any offer, ask for recent sold prices in the same building and read the strata documents.</p>
+    <div class="row"><a class="btn primary" href="${DASHBOARD}" target="_blank" rel="noopener">Full analysis dashboard</a></div></article>`;
+}
+
+/* ---------- Modes ---------- */
+function setMode(mode) {
+  S.mode = mode;
+  document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode));
+  const sheet = ["picks", "prio", "report"].includes(mode);
+  $("#sheet").hidden = !sheet; $("#rail").hidden = sheet || mode === "tour" || innerWidth <= 820; $("#card").hidden = sheet || (innerWidth <= 820 && !S.sel && !S.selSchool && mode !== "tour");
+  renderTour();
+  if (mode === "picks") renderPicks(); if (mode === "prio") renderPrio(); if (mode === "report") renderReport();
+  if (sheet) $("#sheet").scrollTop = 0;
+  if (mode === "tour") { const list = tourList(); S.tourIdx = 0; if (list.length) select(list[0]); else toast("You've reviewed every home in range."); }
+  if (mode === "explore") renderCard();
+  frameView();
+}
+function renderCounts() { $("#c-tour").textContent = tourList().length || ""; $("#c-picks").textContent = H.filter(h => status(h) === "both").length || ""; }
+function renderPeople() { const p = partnerId(); $("#people").innerHTML = faceHTML(myId()) + (p ? faceHTML(p) : `<span class="face ghost">+</span>`) + `<span></span>`; $("#people span:last-child").textContent = p ? `${first(myId())} & ${first(p)}` : `${first(myId())} · waiting for your partner`; }
+let syncShown = false;
+function syncNote() { const el = $("#sync"); if (PUBLIC) { el.hidden = true; return; } if ((shared && !readOnly) || syncShown) { if (shared && !readOnly) el.hidden = true; return; } syncShown = true; el.hidden = false; setTimeout(() => el.hidden = true, 7000); el.textContent = readOnly ? "You can look around, but votes won't save. Ask for Editor access in the Share menu." : "Votes are saved in this browser only. Open the shared link inside Claude so your partner sees them."; }
+function renderAll() { renderPeople(); renderCounts(); renderRail(); refreshBeacons(); syncNote(); if (["picks", "prio", "report"].includes(S.mode)) { if (!document.activeElement?.closest?.("#sheet")) ({ picks: renderPicks, prio: renderPrio, report: renderReport })[S.mode](); } else if (!document.activeElement?.closest?.("#card")) renderCard(); }
+let toastT; function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2400); }
+
+/* ---------- Picking ---------- */
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+function pick(ev) {
+  const r = renderer.domElement.getBoundingClientRect(); mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects([caps, stems, badges, rings, schools, sky], false)[0]; if (!hit) return null;
+  if ([caps, stems, badges, rings].includes(hit.object)) { const h = H[hit.instanceId]; return visible(h) || S.sel === h ? { kind: "home", h, i: hit.instanceId } : null; }
+  if (hit.object === schools) return { kind: "school", s: DATA.schools[hit.instanceId] };
+  if (hit.object.userData.station) return { kind: "station", name: hit.object.userData.station };
+  return null;
+}
+let down = null;
+renderer.domElement.addEventListener("pointerdown", e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener("pointerup", e => { if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return; const h = pick(e); if (h?.kind === "home") select(h.h); else if (h?.kind === "school") { S.selSchool = h.s; S.sel = null; setHighlight(null); refreshBeacons(); renderCard(); flyTo(h.s.x, h.s.z, 1400, .98); if (innerWidth <= 820) { $("#card").hidden = false; $("#rail").hidden = true; } frameView(); } });
+let hq = false;
+renderer.domElement.addEventListener("pointermove", e => { if (hq || e.buttons) return; hq = true; requestAnimationFrame(() => { hq = false; const h = pick(e), tip = $("#tip"); renderer.domElement.style.cursor = h ? "pointer" : "";
+  const ni = h?.kind === "home" ? h.i : -1; if (ni !== hoverIdx) { hoverIdx = ni; refreshBeacons(); }
+  if (!h) { tip.hidden = true; return; }
+  tip.innerHTML = h.kind === "home" ? `<b>${esc(h.h.a)}</b><br>${fmtK(h.h.p)} · score ${score(h.h)} · ${esc(h.h.n)}` : h.kind === "school" ? `<b>${esc(h.s.name)}</b><br>${h.s.rating != null ? h.s.rating.toFixed(1) + "/10" : "Not rated"}` : `<b>${esc(h.name)}</b> SkyTrain`;
+  tip.hidden = false; tip.style.left = Math.min(e.clientX + 14, innerWidth - 270) + "px"; tip.style.top = (e.clientY + 14) + "px"; }); });
+renderer.domElement.addEventListener("pointerleave", () => { $("#tip").hidden = true; if (hoverIdx >= 0) { hoverIdx = -1; refreshBeacons(); } });
+
+/* ---------- Events ---------- */
+document.addEventListener("click", e => {
+  const mb = e.target.closest("#modes button"); if (mb) return setMode(mb.dataset.mode);
+  const mg = e.target.closest("[data-mode-go]"); if (mg) return setMode(mg.dataset.modeGo);
+  const o = e.target.closest("[data-open]"); if (o) { setMode("explore"); return select(byKey[o.dataset.open]); }
+  const v = e.target.closest("[data-vote]"); if (v) return castVote(v.dataset.vote);
+  const l = e.target.closest("[data-lens]"); if (l) { S.lens = l.dataset.lens; renderRail(); return refreshBeacons(); }
+  const t = e.target.closest("[data-type]"); if (t) { const ty = t.dataset.type; S.house.types = S.house.types.includes(ty) ? S.house.types.filter(x => x !== ty) : [...S.house.types, ty]; if (!S.house.types.length) S.house.types = [ty]; saveHouse(); return renderAll(); }
+  const c = e.target.closest("[data-hcity]"); if (c) { const ci = c.dataset.hcity; S.house.cities = S.house.cities.includes(ci) ? S.house.cities.filter(x => x !== ci) : [...S.house.cities, ci]; saveHouse(); renderPrio(); return renderAll(); }
+  const lb = e.target.closest("[data-light]"); if (lb) return applyLight(lb.dataset.light);
+  if (e.target.closest("#card-x")) { S.sel = null; S.selSchool = null; setHighlight(null); refreshBeacons(); renderCard(); if (innerWidth <= 820) $("#card").hidden = true; frameView(); return; }
+  if (e.target.closest("#sheet-x")) return setMode("explore");
+  if (e.target.closest("#orbit")) { orbiting = !orbiting; e.target.closest("#orbit").textContent = orbiting ? "Stop orbit" : "Orbit"; return; }
+  if (e.target.closest("#compass")) { flyTo(controls.target.x, controls.target.z, camera.position.distanceTo(controls.target) * .9, .95, 0, 900); return; }
+  if (e.target.closest("#t-prev")) { S.tourIdx = Math.max(0, S.tourIdx - 1); const l = tourList(); if (l[S.tourIdx]) select(l[S.tourIdx]); return renderTour(); }
+  if (e.target.closest("#t-skip")) { const l = tourList(); S.tourIdx = Math.min(l.length - 1, S.tourIdx + 1); if (l[S.tourIdx]) select(l[S.tourIdx]); return renderTour(); }
+  if (e.target.closest("#t-exit")) return setMode("explore");
+  if (e.target.closest("#m-rail")) { $("#rail").hidden = !$("#rail").hidden; $("#card").hidden = true; return frameView(); }
+  if (e.target.closest("#m-card")) { $("#card").hidden = !$("#card").hidden; $("#rail").hidden = true; if (!$("#card").hidden) renderCard(); return frameView(); }
+});
+let prioT, houseT;
+const saveHouse = () => { clearTimeout(houseT); houseT = setTimeout(() => queueWrite("settings/household", () => ({ ...S.house })), 500); };
+document.addEventListener("input", e => {
+  const w = e.target.closest("[data-w]"); if (w) { const id = myId(); S.prefs[id] = { w: { ...(weightsOf(id) || DEFAULT_W), [w.dataset.w]: +w.value } }; $("#wv-" + w.dataset.w).textContent = w.value; clearTimeout(prioT); prioT = setTimeout(() => { queueWrite(`prefs/${id}`, () => ({ w: S.prefs[id].w, updated: new Date().toISOString() })); refreshBeacons(); renderRail(); renderCounts(); }, 500); return; }
+  const m = { "h-max": "maxPrice", "h-down": "down", "h-rate": "rate", "h-amort": "amort", "f-max": "maxPrice" }[e.target.id];
+  if (m && e.target.value !== "" && !isNaN(+e.target.value)) { S.house[m] = +e.target.value; saveHouse(); refreshBeacons(); renderCounts(); if (e.target.id === "f-max") { clearTimeout(e.target._t); e.target._t = setTimeout(renderRail, 400); } return; }
+  if (e.target.id === "h-hide") { S.house.hideRestricted = e.target.checked; saveHouse(); return renderAll(); }
+  if (e.target.id === "l-pass") { S.showPassed = e.target.checked; return renderAll(); }
+  const layer = { "l-bld": () => city.visible = e.target.checked, "l-walk": () => terrUni.walkOn.value = e.target.checked ? 1 : 0, "l-sch": () => schools.visible = e.target.checked, "l-sky": () => sky.visible = e.target.checked, "l-lbl": () => labels.visible = e.target.checked }[e.target.id]; if (layer) return layer();
+  const plan = e.target.closest("[data-plan]"); if (!plan) return; const k = plan.dataset.plan;
+  if (e.target.dataset.step) { savePlan(k, { steps: { ...(planOf(k).steps || {}), [e.target.dataset.step]: e.target.checked } }); e.target.closest(".step").classList.toggle("done", e.target.checked); }
+  if (e.target.hasAttribute("data-date")) savePlan(k, { date: e.target.value });
+  if (e.target.hasAttribute("data-notes")) { clearTimeout(plan._t); const val = e.target.value; plan._t = setTimeout(() => savePlan(k, { notes: val }), 700); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { if (!$("#sheet").hidden) return setMode("explore"); if (S.sel) { S.sel = null; setHighlight(null); refreshBeacons(); renderCard(); } return; }
+  if (!S.sel || e.target.closest("textarea, input, select")) return;
+  if (e.key === "ArrowRight") castVote("love"); else if (e.key === "ArrowUp") { e.preventDefault(); castVote("maybe"); } else if (e.key === "ArrowLeft") castVote("pass");
+});
+function frameView() {
+  // Put the map's focus point in the open space the panels leave, a little below its middle so the
+  // beacon and building above it stay in view.
+  const w = innerWidth, h = innerHeight, box = sel => { const e = $(sel); return e && !e.hidden ? e.getBoundingClientRect() : null; };
+  const bar = box("#bar"), rail = box("#rail"), card = box("#card");
+  let left = 0, right = w, top = bar ? bar.bottom : 0, bottom = h;
+  if (w > 820) { if (rail) left = rail.right; if (card && (S.sel || S.selSchool)) right = card.left; }
+  else { const panel = (card && (S.sel || S.selSchool || S.mode === "tour")) ? card : rail; if (panel) bottom = panel.top; }
+  const cx = (left + right) / 2, cy = top + (bottom - top) * .62, dx = Math.round(w / 2 - cx), dy = Math.round(h / 2 - cy);
+  if (dx || dy) camera.setViewOffset(w, h, dx, dy, w, h); else camera.clearViewOffset();
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener("resize", () => { renderer.setSize(innerWidth, innerHeight); frameView(); });
+
+/* ---------- Frame loop: fly, orbit, shadows that follow the view, compass, scale ---------- */
+let orbiting = false;
+const niceScale = [50, 100, 200, 500, 1000, 2000, 5000, 10000];
+renderer.setAnimationLoop(now => {
+  if (fly) { const t = Math.min(1, (now - fly.t0) / fly.dur), k = ease(t); controls.target.lerpVectors(fly.fromT, fly.toT, k); camera.position.lerpVectors(fly.fromP, fly.toP, k); if (t >= 1) fly = null; }
+  if (orbiting && !fly) { const off = camera.position.clone().sub(controls.target); off.applyAxisAngle(new THREE.Vector3(0, 1, 0), .0025); camera.position.copy(controls.target).add(off); }
+  controls.update();
+  const dist = camera.position.distanceTo(controls.target),
+    bs = Math.min(9, Math.max(1, dist / 2200)); if (Math.abs(bs - beaconScale) / beaconScale > .06) { beaconScale = bs; refreshBeacons(); placeSchools(Math.max(1, bs * .7)); if (priceTag && S.sel) priceTag.position.y = capY(S.sel) + 60 * beaconScale; }
+  const half = Math.min(9000, Math.max(700, dist * .75)), L = LIGHTS[lightMode].dir;
+  sun.target.position.copy(controls.target); sun.position.set(controls.target.x + L[0] * 12000, controls.target.y + L[1] * 12000, controls.target.z + L[2] * 12000);
+  const sc2 = sun.shadow.camera; if (sc2.right !== half) { sc2.left = -half; sc2.right = half; sc2.top = half; sc2.bottom = -half; sc2.near = 100; sc2.far = 30000; sc2.updateProjectionMatrix(); }
+  skyDome.position.copy(camera.position);
+  const az = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
+  $("#needle").style.transform = `rotate(${az * 180 / Math.PI}deg)`;
+  const mpp = dist * 2 * Math.tan(camera.fov * Math.PI / 360) / innerHeight, len = niceScale.find(v => v / mpp >= 60) || 10000;
+  $("#scale-i").style.width = Math.round(len / mpp) + "px"; $("#scale-l").textContent = len >= 1000 ? `${len / 1000} km` : `${len} m`;
+  renderer.render(scene, camera);
+});
+
+/* ---------- Start ---------- */
+applyLight("day"); renderAll(); renderCard(); setMode("explore");
+{ const [x, z] = toXZ(49.25, -122.96); controls.target.set(x, ground(x, z), z); camera.position.set(x - 6000, 15500, z + 17500); }
+window.__twin = { THREE, camera, controls, renderer, S, H, caps, stems, city, schools, sky, labels, terrain, ground, select, setMode, castVote, toScreen(x, y, z) { const v = new THREE.Vector3(x, y, z).project(camera); const r = renderer.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height, v.z]; }, capY };
+progress(1); $("#loading").hidden = true;
+
+(async function bootShared() {
+  if (PUBLIC || !window.claude?.use) return;
+  [db, userCap] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (userCap) { const me = await userCap.me(); S.me = me.id; S.meName = me.name; S.meColor = me.color; S.meAvatar = me.avatarUrl; if (await userCap.can("data.write") === false) readOnly = true; }
+  if (!db || !S.me) { renderAll(); return; }
+  shared = true; const local = S.votes.local; delete S.votes.local; let seeded = false;
+  const onErr = err => { if (err?.code === "revoked") { shared = false; renderAll(); } };
+  db.collection("votes").onSnapshot(snap => { const next = {}; snap.docs.forEach(d => next[d.id] = (d.data() || {}).votes || {}); const mine = S.votes[S.me]; S.votes = next; if (mine && writers[`votes/${S.me}`]?.busy) S.votes[S.me] = mine;
+    if (!seeded && !snap.metadata.fromCache) { seeded = true; if (local && Object.keys(local).length && !Object.keys(S.votes[S.me] || {}).length && !readOnly) { S.votes[S.me] = local; queueWrite(`votes/${S.me}`, () => ({ votes: S.votes[S.me], updated: new Date().toISOString() })); } }
+    names().then(renderAll); }, onErr);
+  db.collection("prefs").onSnapshot(snap => { snap.docs.forEach(d => { if (d.id !== S.me || !prioT) S.prefs[d.id] = d.data(); }); names().then(renderAll); }, onErr);
+  db.collection("plans").onSnapshot(snap => { const n = {}; snap.docs.forEach(d => n[d.id] = d.data()); S.plans = n; renderAll(); }, onErr);
+  db.doc("settings/household").onSnapshot(d => { if (d.exists && !document.activeElement?.closest?.("#sheet, #rail")) { S.house = { ...DEFAULT_HOUSE, ...d.data() }; renderAll(); } }, onErr);
+  renderAll();
+})();
+</script>
+
+</body>
+</html>

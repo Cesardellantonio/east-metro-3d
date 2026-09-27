@@ -1,0 +1,9 @@
+# Listing-derived outputs and raw downloads stay private (REW/MLS listing data is not ours to redistribute).
+analysis/output/
+data/
+*.sqlite3*
+__pycache__/
+*.pyc
+node_modules/
+pp-prof*/
+.DS_Store

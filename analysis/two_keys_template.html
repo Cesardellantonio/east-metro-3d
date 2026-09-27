@@ -1,0 +1,664 @@
+<title>Two Keys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --fog: #edf1f0; --paper: #ffffff; --paper-2: #f6f8f7; --ink: #11272c; --ink-2: #4a5f63; --ink-3: #7b8c8f; --line: #d5dfdd;
+  --brass: #a8741a; --brass-2: #c9973d; --brass-soft: #f4e8cc; --pine: #22614f; --pine-soft: #dcefe8; --rose: #a8414f; --rose-soft: #f6e1e4;
+  --sky: #2c6a93; --sky-soft: #deebf4; --shadow: 0 1px 2px rgba(17,39,44,.06), 0 10px 30px rgba(17,39,44,.08);
+  --land: #e4ebe8; --water: #cfe0e4;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --fog: #0e1a1c; --paper: #152427; --paper-2: #1a2b2e; --ink: #e7eeed; --ink-2: #aebdbd; --ink-3: #82938f; --line: #2a3c3f;
+    --brass: #dcaa4a; --brass-2: #e9bd65; --brass-soft: #3a2f17; --pine: #56b89a; --pine-soft: #183a31; --rose: #e27e8d; --rose-soft: #3d2227; --sky: #6fb0dc; --sky-soft: #173042;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.25); --land: #1f3134; --water: #11262c; }
+}
+:root[data-theme="dark"] { color-scheme: dark; --fog: #0e1a1c; --paper: #152427; --paper-2: #1a2b2e; --ink: #e7eeed; --ink-2: #aebdbd; --ink-3: #82938f; --line: #2a3c3f;
+  --brass: #dcaa4a; --brass-2: #e9bd65; --brass-soft: #3a2f17; --pine: #56b89a; --pine-soft: #183a31; --rose: #e27e8d; --rose-soft: #3d2227; --sky: #6fb0dc; --sky-soft: #173042;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.25); --land: #1f3134; --water: #11262c; }
+* { box-sizing: border-box; }
+body { background: var(--fog); color: var(--ink); font: 16px/1.5 var(--body); padding-inline: 16px; padding-block: 0 80px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-size: clamp(26px, 4vw, 36px); font-weight: 750; line-height: 1.08; }
+h3 { font-size: 19px; font-weight: 700; }
+p { margin: 0; max-width: 66ch; }
+.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-2); } .small { font-size: 14px; } .tiny { font-size: 12.5px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
+a { color: var(--sky); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--brass-2); outline-offset: 2px; }
+
+/* Header */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--fog) 88%, transparent); backdrop-filter: blur(10px);
+  margin-inline: -16px; padding: 12px 16px 0; border-bottom: 1px solid var(--line); }
+.brandrow { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; gap: 14px; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand h1 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+@media (max-width: 560px) { .people span { display: none; } .brand h1 { font-size: 23px; } }
+.brand svg { width: 40px; height: 26px; }
+.people { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2); }
+.face { width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid var(--c, var(--line)); object-fit: cover; background: var(--paper); }
+.face.ghost { border-style: dashed; display: inline-grid; place-items: center; font-size: 13px; color: var(--ink-3); }
+nav.tabs { max-width: 1120px; margin: 8px auto 0; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs button { flex: none; border: 0; background: none; padding: 10px 14px 12px; font: 600 15px var(--body); color: var(--ink-2); cursor: pointer; border-bottom: 3px solid transparent; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--brass); }
+nav.tabs .count:empty { display: none; }
+nav.tabs .count { font: 500 12px var(--mono); background: var(--brass-soft); color: var(--brass); padding: 1px 6px; border-radius: 999px; margin-left: 6px; }
+section.view { padding-top: 28px; display: grid; gap: 24px; }
+
+/* Shared bits */
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+.pad { padding: 20px; }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brass); }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--paper-2); color: var(--ink-2); border: 1px solid var(--line); }
+.chip.good { background: var(--pine-soft); color: var(--pine); border-color: transparent; }
+.chip.warn { background: var(--brass-soft); color: var(--brass); border-color: transparent; }
+.chip.bad { background: var(--rose-soft); color: var(--rose); border-color: transparent; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); padding: 10px 16px; font-weight: 700; cursor: pointer; text-decoration: none; color: var(--ink); }
+.btn.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn:disabled { opacity: .5; cursor: default; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 18px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; }
+.banner { border-radius: 14px; padding: 12px 16px; background: var(--sky-soft); color: var(--ink); font-size: 14.5px; }
+.banner.warn { background: var(--brass-soft); }
+
+/* Today */
+.hello { display: grid; gap: 10px; }
+.hello h2 { font-size: clamp(30px, 5vw, 46px); }
+.stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.stat { display: grid; gap: 4px; padding: 18px; align-content: start; }
+@media (max-width: 560px) { .stat { padding: 12px; } .stat b { font-size: 28px !important; } .stat span { font-size: 13px; line-height: 1.3; } }
+.stat b { font: 800 36px/1 var(--display); }
+.stat.keys b { color: var(--pine); }
+.next-list { display: grid; gap: 10px; }
+.next-item { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--paper-2); cursor: pointer; border: 1px solid transparent; text-align: left; width: 100%; }
+.next-item:hover { border-color: var(--line); }
+.next-item .date { font: 700 13px/1.1 var(--mono); text-align: center; color: var(--brass); }
+
+/* Deck */
+.deck-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.progress { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; flex: 1; min-width: 160px; }
+.progress i { display: block; height: 100%; background: var(--brass); }
+.home { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 0; overflow: hidden; }
+@media (max-width: 860px) { .home { grid-template-columns: 1fr; } }
+.home-main { padding: 24px; display: grid; gap: 18px; align-content: start; }
+.home-side { padding: 24px; background: var(--paper-2); border-left: 1px solid var(--line); display: grid; gap: 16px; align-content: start; }
+@media (max-width: 860px) { .home-side { border-left: 0; border-top: 1px solid var(--line); } }
+.home-head { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+.home-head h2 { font-size: clamp(24px, 3.4vw, 34px); }
+.glyph { width: 64px; height: 64px; border-radius: 16px; background: var(--brass-soft); color: var(--brass); display: grid; place-items: center; }
+.glyph svg { width: 40px; height: 40px; }
+.price-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.price-line .ask { font: 800 38px/1 var(--display); }
+.price-line .mo { font: 700 18px var(--display); color: var(--ink-2); }
+.verdict { font-weight: 700; }
+.verdict.good { color: var(--pine); } .verdict.bad { color: var(--rose); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.fact { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; padding: 12px; border-radius: 14px; background: var(--paper-2); border: 1px solid var(--line); }
+.fact svg { width: 26px; height: 26px; color: var(--sky); margin-top: 2px; }
+.fact b { display: block; font-size: 15.5px; }
+.fact span { font-size: 13.5px; color: var(--ink-2); }
+.reasons { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.reasons ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14.5px; }
+.reasons h3 { font-size: 15px; }
+.reasons .yes h3 { color: var(--pine); } .reasons .no h3 { color: var(--rose); }
+.minimap { width: 100%; height: auto; border-radius: 12px; background: var(--water); display: block; }
+.vote-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.vote { display: grid; justify-items: center; gap: 4px; padding: 14px 8px; border-radius: 14px; border: 2px solid var(--line); background: var(--paper); cursor: pointer; font-weight: 700; font-size: 14.5px; }
+.vote svg { width: 34px; height: 22px; }
+.vote kbd { font: 500 11px var(--mono); color: var(--ink-3); }
+.vote.love { color: var(--pine); } .vote.maybe { color: var(--sky); } .vote.pass { color: var(--rose); }
+.vote[aria-pressed="true"].love { background: var(--pine-soft); border-color: var(--pine); }
+.vote[aria-pressed="true"].maybe { background: var(--sky-soft); border-color: var(--sky); }
+.vote[aria-pressed="true"].pass { background: var(--rose-soft); border-color: var(--rose); }
+.keyturn { transition: transform .45s cubic-bezier(.2,.9,.3,1.3); transform-origin: 9px 11px; }
+.vote[aria-pressed="true"].love .keyturn { transform: rotate(90deg); }
+textarea, input[type=text], input[type=date], input[type=number], select { width: 100%; font: 15px var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; }
+textarea { resize: vertical; min-height: 64px; }
+label.lab { font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 5px; }
+.partner-box { border-radius: 14px; padding: 14px; background: var(--paper); border: 1px dashed var(--line); display: grid; gap: 6px; }
+.partner-box.sealed { color: var(--ink-3); }
+.partner-box .who { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.deck-nav { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.toggle { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; color: var(--ink-2); }
+.toggle[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.empty { text-align: center; padding: 48px 20px; display: grid; gap: 10px; justify-items: center; }
+
+/* Picks */
+.pick { display: grid; gap: 14px; padding: 18px; }
+.pick-head { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.lock svg { width: 38px; height: 38px; }
+.steps { display: grid; gap: 6px; }
+.step { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; cursor: pointer; }
+.step input { width: 18px; height: 18px; accent-color: var(--pine); margin-top: 2px; flex: none; }
+.step.done span { text-decoration: line-through; color: var(--ink-3); }
+.two-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.note { border-radius: 12px; padding: 10px 12px; background: var(--paper-2); border-left: 4px solid var(--c, var(--line)); font-size: 14.5px; }
+.note .who { font-weight: 700; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+.vote-dot { display: inline-block; font: 700 11.5px var(--body); padding: 1px 8px; border-radius: 999px; }
+.vote-dot.love { background: var(--pine-soft); color: var(--pine); } .vote-dot.maybe { background: var(--sky-soft); color: var(--sky); } .vote-dot.pass { background: var(--rose-soft); color: var(--rose); } .vote-dot.none { background: var(--paper-2); color: var(--ink-3); }
+.row-home { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; border-top: 1px solid var(--line); }
+.row-home:first-child { border-top: 0; }
+
+/* Priorities */
+.prio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 860px) { .prio { grid-template-columns: 1fr; } }
+.slider { display: grid; gap: 4px; }
+.slider .top { display: flex; justify-content: space-between; font-size: 14.5px; }
+.slider input { width: 100%; accent-color: var(--brass); }
+.slider .theirs { font: 500 12px var(--mono); color: var(--ink-3); }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 14px; }
+.hex { width: 100%; max-width: 360px; height: auto; justify-self: center; }
+.hex text { font: 700 12px var(--body); fill: var(--ink-2); }
+
+/* Report */
+.letter { max-width: 760px; margin: 0 auto; display: grid; gap: 22px; }
+.letter h2 { font-size: clamp(30px, 4.6vw, 44px); }
+.letter p { font-size: 17.5px; line-height: 1.62; max-width: none; }
+.letter .pull { font: 700 22px/1.3 var(--display); border-left: 4px solid var(--brass); padding-left: 16px; }
+.bars { display: grid; gap: 7px; }
+.bar { display: grid; grid-template-columns: 140px 1fr 58px; gap: 10px; align-items: center; font-size: 14px; }
+.bar em { display: block; height: 10px; border-radius: 5px; background: var(--line); position: relative; }
+.bar em i { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 50; box-shadow: var(--shadow); }
+@media (prefers-reduced-motion: reduce) { .keyturn { transition: none; } }
+</style>
+
+<header class="top">
+  <div class="brandrow">
+    <div class="brand">
+      <svg viewBox="0 0 40 26" aria-hidden="true"><g fill="none" stroke="var(--brass)" stroke-width="2.4" stroke-linecap="round"><circle cx="8" cy="8" r="5"/><path d="M12 11l9 9m-3-3l3-3m0 6l2-2"/><circle cx="32" cy="8" r="5" stroke="var(--pine)"/><path d="M28 11l-9 9m3-3l-3-3" stroke="var(--pine)"/></g></svg>
+      <h1>Two Keys</h1>
+    </div>
+    <div class="people" id="people"></div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-v="today" aria-selected="true">Today</button>
+    <button role="tab" data-v="deck">The deck <span class="count" id="c-deck"></span></button>
+    <button role="tab" data-v="picks">Our picks <span class="count" id="c-picks"></span></button>
+    <button role="tab" data-v="prio">What matters</button>
+    <button role="tab" data-v="report">The report</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <div id="sync-note" hidden></div>
+  <section class="view" id="v-today"></section>
+  <section class="view" id="v-deck" hidden></section>
+  <section class="view" id="v-picks" hidden></section>
+  <section class="view" id="v-prio" hidden></section>
+  <section class="view" id="v-report" hidden></section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const DASHBOARD = "https://claude.ai/artifact/SZSfz3J35ByoZzYaTyFApA", TWIN = "https://claude.ai/artifact/567xxnPKoSuPcaxF79Czvy";
+const H = DATA.homes, byKey = Object.fromEntries(H.map(h => [h.k, h]));
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt$ = v => v == null ? "—" : "$" + Math.round(v).toLocaleString("en-CA");
+const fmtK = v => v == null ? "—" : v >= 999500 ? "$" + (v / 1e6).toFixed(2) + "M" : "$" + Math.round(v / 1000) + "K";
+const pct = (v, d = 0) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d) + "%";
+const dateLabel = iso => new Date(iso + "T12:00:00").toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" });
+const typeName = t => t === "House" ? "House / duplex" : t;
+const walkMin = km => Math.max(1, Math.round(km * 1000 / 80));
+const ATTRS = [["VAL", "Good value"], ["SPC", "Space"], ["SCH", "Schools"], ["WLK", "Walkable"], ["LOC", "Sought-after area"], ["BLD", "Newer, nicer building"]];
+const DEFAULT_W = { VAL: 5, SPC: 3, SCH: 4, WLK: 3, LOC: 2, BLD: 3 };
+const DEFAULT_HOUSE = { down: 20, rate: 4.5, amort: 25, maxPrice: 1200000, types: ["Condo", "Townhouse", "House"], cities: [], hideRestricted: true };
+const STEPS = [["viewing", "Book a viewing"], ["comps", "Ask our realtor for sold prices in this building or street (last 6 months)"], ["strata", "Read the strata minutes, depreciation report and bylaws"], ["commute", "Try the commute at rush hour"], ["school", "Visit the school and confirm the catchment with the district"], ["mortgage", "Check the numbers with our mortgage broker"]];
+
+/* ---------- State ---------- */
+const S = { me: null, meName: "", meColor: "#a8741a", meAvatar: "", votes: {}, prefs: {}, plans: {}, house: { ...DEFAULT_HOUSE }, mode: "local", view: "today", deckIdx: 0, deckShowAll: false, profiles: {} };
+let db = null, userCap = null, readOnly = false;
+const LS = "twokeys.v1";
+function loadLocal() { try { const j = JSON.parse(localStorage.getItem(LS) || "{}"); return j; } catch { return {}; } }
+function saveLocal() { try { localStorage.setItem(LS, JSON.stringify({ votes: S.votes.local || {}, prefs: S.prefs.local || null, plans: S.plans, house: S.house })); } catch {} }
+
+// One write at a time per document; later edits coalesce into the next write.
+const writers = {};
+function queueWrite(path, bodyFn) {
+  if (S.mode !== "shared" || readOnly) { saveLocal(); return; }
+  const w = writers[path] ||= { busy: false, dirty: false };
+  w.bodyFn = bodyFn;
+  if (w.busy) { w.dirty = true; return; }
+  const run = async () => {
+    w.busy = true; w.dirty = false;
+    try { await db.doc(path).set(w.bodyFn()); }
+    catch (e) {
+      if (e?.code === "invalid_argument") { readOnly = true; toast("You can view this page but not save. Ask for Editor access to vote."); renderSyncNote(); }
+      else if (e?.code === "quota_exceeded") toast("Storage is full, so this change wasn't saved.");
+      else if (e?.code === "unavailable") { await new Promise(r => setTimeout(r, 800 + Math.random() * 800)); try { await db.doc(path).set(w.bodyFn()); } catch { toast("Couldn't save just now. Your last change may not be stored."); } }
+    }
+    w.busy = false;
+    if (w.dirty) run();
+  };
+  run();
+}
+const myId = () => S.mode === "shared" ? S.me : "local";
+const myVotes = () => S.votes[myId()] || (S.votes[myId()] = {});
+function partnerId() {
+  const ids = new Set([...Object.keys(S.votes), ...Object.keys(S.prefs)].filter(id => id !== myId() && id !== "local"));
+  let best = null, n = -1;
+  for (const id of ids) { const c = Object.keys(S.votes[id] || {}).length; if (c > n) { n = c; best = id; } }
+  return best;
+}
+function weightsOf(id) { return (S.prefs[id] && S.prefs[id].w) || null; }
+function ourWeights() {
+  const ws = [weightsOf(myId()), weightsOf(partnerId())].filter(Boolean);
+  if (!ws.length) return DEFAULT_W;
+  const out = {}; for (const [k] of ATTRS) out[k] = ws.reduce((a, w) => a + (w[k] ?? DEFAULT_W[k]), 0) / ws.length; return out;
+}
+function score(h, w = ourWeights()) { const tw = ATTRS.reduce((a, [k]) => a + w[k], 0) || 1; return Math.round(ATTRS.reduce((a, [k]) => a + w[k] * h.at[k], 0) / tw); }
+function monthly(h) {
+  const loan = h.p * (1 - S.house.down / 100), i = Math.pow(1 + S.house.rate / 200, 1 / 6) - 1, n = S.house.amort * 12;
+  const mort = i > 0 ? loan * i / (1 - Math.pow(1 + i, -n)) : loan / n;
+  const freehold = h.t === "House" && !/strata/i.test(h.ten || "");
+  const strata = freehold ? 0 : h.st, tax = h.tx;
+  return { total: mort + (strata || 0) + (tax || 0) / 12, mort, strata, tax: tax == null ? null : tax / 12, partial: strata == null || tax == null, cash: h.p * S.house.down / 100 };
+}
+const inScope = h => h.p <= S.house.maxPrice && S.house.types.includes(h.t) && (!S.house.cities.length || S.house.cities.includes(h.c)) && !(S.house.hideRestricted && h.rs);
+function voteOf(id, k) { return (S.votes[id] || {})[k] || null; }
+
+/* ---------- People ---------- */
+async function names() {
+  const ids = [S.me, partnerId()].filter(Boolean);
+  if (userCap && ids.length) { try { S.profiles = await userCap.profiles(ids); } catch {} }
+}
+const nameOf = id => id === myId() ? (S.meName || "You") : ((S.profiles[id] && S.profiles[id].name) || "Your partner");
+const colorOf = id => id === myId() ? S.meColor : ((S.profiles[id] && S.profiles[id].color) || "var(--pine)");
+const avatarOf = id => id === myId() ? S.meAvatar : (S.profiles[id] && S.profiles[id].avatarUrl) || "";
+function faceHTML(id) { const a = avatarOf(id); return a ? `<img class="face" style="--c:${colorOf(id)}" src="${esc(a)}" alt="">` : `<span class="face ghost" style="--c:${colorOf(id)}">?</span>`; }
+function renderPeople() {
+  const p = partnerId();
+  const el = $("#people"); el.innerHTML = "";
+  el.insertAdjacentHTML("beforeend", faceHTML(myId()));
+  el.insertAdjacentHTML("beforeend", p ? faceHTML(p) : `<span class="face ghost" title="Waiting for your partner">+</span>`);
+  const span = document.createElement("span"); span.textContent = p ? `${nameOf(myId()).split(" ")[0]} & ${nameOf(p).split(" ")[0]}` : `${nameOf(myId()).split(" ")[0]}, waiting for your partner`; el.appendChild(span);
+}
+
+/* ---------- Icons ---------- */
+const ICON = {
+  key: (turned) => `<svg viewBox="0 0 34 22" aria-hidden="true"><g class="keyturn" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="9" cy="11" r="6"/><path d="M15 11h16m-5 0v5m4-5v4"/></g></svg>`,
+  maybe: `<svg viewBox="0 0 34 22" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7a5 5 0 1 1 6 5c-1 .4-1 1.2-1 2.4"/><circle cx="17" cy="19" r=".6" fill="currentColor"/></g></svg>`,
+  pass: `<svg viewBox="0 0 34 22" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M11 5l12 12M23 5L11 17"/></g></svg>`,
+  lockOpen: `<svg viewBox="0 0 38 38" aria-hidden="true"><g fill="none" stroke="var(--pine)" stroke-width="2.6" stroke-linecap="round"><rect x="8" y="17" width="22" height="16" rx="3" fill="var(--pine-soft)"/><path d="M13 17v-5a6 6 0 0 1 11.6-2.2"/><circle cx="19" cy="25" r="2" fill="var(--pine)"/></g></svg>`,
+  lock: `<svg viewBox="0 0 38 38" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="17" width="20" height="15" rx="3"/><path d="M13 17v-4a6 6 0 0 1 12 0v4"/></g></svg>`,
+  Condo: `<svg viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2"><rect x="10" y="4" width="20" height="32" rx="1.5"/><path d="M4 36h32"/></g><g fill="currentColor">${[9, 15, 21, 27].map(y => `<rect x="14" y="${y}" width="4" height="3"/><rect x="22" y="${y}" width="4" height="3"/>`).join("")}</g></svg>`,
+  Townhouse: `<svg viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 19 12 11l8 7 8-7 9 8M6 17v19h28V17M2 36h36"/></g><g fill="currentColor"><rect x="9" y="22" width="5" height="5"/><rect x="26" y="22" width="5" height="5"/><rect x="17" y="27" width="6" height="9"/></g></svg>`,
+  House: `<svg viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 20 20 7l16 13M8 17v19h24V17M2 36h36"/></g><g fill="currentColor"><rect x="12" y="21" width="6" height="6"/><rect x="23" y="26" width="6" height="10"/></g></svg>`,
+  space: `<svg viewBox="0 0 26 26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="20" height="20" rx="2"/><path d="M3 12h9v11M12 3v5"/></g></svg>`,
+  school: `<svg viewBox="0 0 26 26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 10 13 4l11 6-11 6z"/><path d="M6 12v6c4 3 10 3 14 0v-6"/></g></svg>`,
+  walk: `<svg viewBox="0 0 26 26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="14" cy="4" r="2"/><path d="M13 8l-3 7 4 3 1 6M13 8l4 5 4 1M10 15l-3 7"/></g></svg>`,
+  train: `<svg viewBox="0 0 26 26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="3" width="14" height="15" rx="3"/><path d="M6 11h14M9 22l2-4m6 4-2-4"/><circle cx="10" cy="14.5" r=".8" fill="currentColor"/><circle cx="16" cy="14.5" r=".8" fill="currentColor"/></g></svg>`,
+  build: `<svg viewBox="0 0 26 26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M4 23V9l9-5 9 5v14z"/><path d="M10 23v-7h6v7"/></g></svg>`,
+  pin: `<svg viewBox="0 0 26 26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M13 24s8-7 8-13a8 8 0 0 0-16 0c0 6 8 13 8 13z"/><circle cx="13" cy="11" r="3"/></g></svg>`,
+};
+
+/* ---------- Plain-language reading of a home ---------- */
+function reasons(h) {
+  const yes = [], no = [];
+  const m = monthly(h);
+  if (h.g <= -10) yes.push(`Asks about ${Math.abs(Math.round(h.g))}% less than similar homes nearby.`);
+  if (h.hr) yes.push(`Hermes ranks it #${h.hr} on its own shortlist.`);
+  if (h.cu > 0) yes.push(`The seller has already cut the price (${pct(h.cp, 1)}).`);
+  if (h.er != null && h.er >= 7) yes.push(`${h.es} rates ${h.er.toFixed(1)}/10, in the top ${Math.max(5, Math.round((10 - h.er) * 10))}% of Metro Vancouver public schools.`);
+  if (h.w >= 85) yes.push(`Very walkable: ${h.wg || "several"} grocery stores and ${h.wp || "many"} parks or playgrounds within a 10-minute walk.`);
+  if (h.skm != null && h.skm <= .8) yes.push(`${walkMin(h.skm)} minutes' walk to ${h.stn} SkyTrain.`);
+  if (h.at.SPC >= 85) yes.push(`Roomy for the price range: ${h.sq.toLocaleString()} sqft.`);
+  if (h.y && h.y >= 2015) yes.push(`Built ${h.y}, so fewer big repairs coming.`);
+  if (h.lx === "Premium" || h.lx === "Luxury") yes.push(`${h.lx} finishes (${h.lh.slice(0, 3).join(", ").toLowerCase()}).`);
+  if (h.g >= 8) no.push(`Asks about ${Math.round(h.g)}% more than similar homes. Room to negotiate, or a reason we can't see.`);
+  if (h.lk) no.push(`Built in ${h.y}, the leaky-condo era. Ask for proof the building envelope was fixed.`);
+  if (h.fl.includes("resale not established")) no.push("Might be a presale or assignment. Confirm it's a normal resale.");
+  if (h.fl.includes("third-bedroom integrity conflict")) no.push("The third bedroom may really be a den. Check windows and closet.");
+  if (/Leasehold/.test(h.ten || "")) no.push("Leasehold: you don't own the land, so prices rise slower and financing is harder.");
+  if (h.er != null && h.er < 4) no.push(`${h.es} rates only ${h.er.toFixed(1)}/10. Check other schools nearby.`);
+  if (!h.ec && h.es) no.push("School catchment not confirmed. The school shown is just the nearest one.");
+  if (h.w != null && h.w < 55) no.push("Car-dependent: most errands need a drive.");
+  if (h.band === "comparison") no.push(`Above our $1.2M ceiling (${fmtK(h.p)}).`);
+  if (m.partial) no.push("Some monthly costs are missing from the listing, so the monthly figure is a minimum.");
+  if (h.card) no.push("Only the listing card has been read so far. Details are unverified.");
+  if (h.rent && m.total > h.rent * 1.3) no.push(`Owning costs about ${fmt$(m.total - h.rent)}/mo more than renting a typical 3-bed in ${h.c}.`);
+  return { yes: yes.slice(0, 5), no: no.slice(0, 5) };
+}
+function verdict(h) {
+  if (h.g <= -10) return `<span class="verdict good">Asks ${Math.abs(Math.round(h.g))}% below similar homes</span>`;
+  if (h.g >= 8) return `<span class="verdict bad">Asks ${Math.round(h.g)}% above similar homes</span>`;
+  return `<span class="verdict">Priced about in line with similar homes</span>`;
+}
+
+/* ---------- Locator map ---------- */
+function minimap(h) {
+  const [lo0, la0, lo1, la1] = DATA.map.bbox, k = Math.cos(49.25 * Math.PI / 180), W = 320, Hh = Math.round(W * (la1 - la0) / ((lo1 - lo0) * k));
+  const P = (lat, lon) => [((lon - lo0) * k / ((lo1 - lo0) * k) * W).toFixed(1), ((la1 - lat) / (la1 - la0) * Hh).toFixed(1)];
+  const land = DATA.map.land.map(r => `M${r.map(([lo, la]) => P(la, lo).join(",")).join("L")}Z`).join("");
+  const lines = DATA.map.lines.map(l => `<path d="M${l.map(([la, lo]) => P(la, lo).join(",")).join("L")}" fill="none" stroke="var(--ink-3)" stroke-width="1.6" stroke-linejoin="round"/>`).join("");
+  const [x, y] = P(h.lat, h.lon);
+  return `<svg class="minimap" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Where ${esc(h.a)} is"><path d="${land}" fill="var(--land)"/>${lines}<circle cx="${x}" cy="${y}" r="11" fill="var(--brass)" opacity=".25"/><circle cx="${x}" cy="${y}" r="5" fill="var(--brass)" stroke="var(--paper)" stroke-width="2"/></svg>`;
+}
+
+/* ---------- Today ---------- */
+function counts() {
+  const me = myId(), p = partnerId(), inS = H.filter(inScope);
+  const loveBoth = p ? H.filter(h => voteOf(me, h.k)?.v === "love" && voteOf(p, h.k)?.v === "love") : [];
+  const toReview = inS.filter(h => !voteOf(me, h.k));
+  const split = p ? H.filter(h => { const a = voteOf(me, h.k)?.v, b = voteOf(p, h.k)?.v; return a && b && a !== b && (a === "love" || b === "love"); }) : [];
+  const waitingPartner = p ? H.filter(h => voteOf(me, h.k)?.v === "love" && !voteOf(p, h.k)) : [];
+  return { inS, loveBoth, toReview, split, waitingPartner };
+}
+function renderToday() {
+  const c = counts(), p = partnerId(), me = nameOf(myId()).split(" ")[0];
+  const upcoming = Object.entries(S.plans).filter(([k, pl]) => pl.date && byKey[k]).sort((a, b) => a[1].date.localeCompare(b[1].date));
+  const top = [...c.toReview].sort((a, b) => score(b) - score(a)).slice(0, 3);
+  const scan = new Date(DATA.scan + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric" });
+  $("#v-today").innerHTML = `
+    <div class="hello"><div class="eyebrow">Listings as of ${esc(scan)}</div>
+      <h2>${esc(me === "You" ? "Hello" : "Hi " + me)}. ${c.loveBoth.length ? `You both love ${c.loveBoth.length} home${c.loveBoth.length === 1 ? "" : "s"}.` : c.toReview.length ? `${c.toReview.length} homes are waiting for your verdict.` : "You've reviewed every home in range."}</h2>
+      <p class="muted">Each of you goes through the homes on your own. A home unlocks when you both turn your key. ${p ? "" : "Share this page with your partner (Share menu, as Editor) so their votes show up here."}</p></div>
+    <div class="stats3">
+      <div class="card stat keys"><b class="num">${c.loveBoth.length}</b><span>homes you both love</span></div>
+      <div class="card stat"><b class="num">${c.toReview.length}</b><span>left for you to review (of ${c.inS.length})</span></div>
+      <div class="card stat"><b class="num">${c.split.length}</b><span>to talk about</span></div>
+    </div>
+    <div class="grid2">
+      <div class="card pad" style="display:grid;gap:12px;align-content:start">
+        <h3>Start here</h3>
+        <p class="small muted">The best-scoring homes you haven't reviewed yet, using both your priorities.</p>
+        <div class="next-list">${top.map(h => `<button class="next-item" data-open="${esc(h.k)}"><span class="glyph" style="width:44px;height:44px;border-radius:12px">${ICON[h.t]}</span><span><b>${esc(h.a)}</b><br><span class="small muted">${esc(h.n)}, ${esc(h.c)} · ${fmtK(h.p)} · ≈${fmt$(monthly(h).total)}/mo</span></span><span class="num" style="font-weight:700">${score(h)}</span></button>`).join("") || `<p class="muted">Nothing left in range. Widen the budget in What matters.</p>`}</div>
+        <button class="btn primary" data-go="deck">Open the deck</button>
+      </div>
+      <div class="card pad" style="display:grid;gap:12px;align-content:start">
+        <h3>Coming up</h3>
+        ${upcoming.length ? `<div class="next-list">${upcoming.slice(0, 5).map(([k, pl]) => { const h = byKey[k]; return `<button class="next-item" data-go="picks"><span class="date">${esc(dateLabel(pl.date).replace(",", "<br>"))}</span><span><b>${esc(h.a)}</b><br><span class="small muted">Viewing · ${esc(h.n)}</span></span><span></span></button>`; }).join("")}</div>` : `<p class="small muted">No viewings planned yet. When you both love a home, add a viewing date under Our picks.</p>`}
+        ${c.waitingPartner.length ? `<p class="small">${c.waitingPartner.length} of your favourites are waiting for ${esc(nameOf(p).split(" ")[0])}'s vote.</p>` : ""}
+        <h3 style="margin-top:6px">The market in one line</h3>
+        <p class="small">${esc(marketLine())} <a href="#report" data-go="report">Read the report</a></p>
+      </div>
+    </div>`;
+}
+function marketLine() {
+  const g = (a, t) => DATA.gvr.find(x => x.area === a && x.property_type === t);
+  const apt = g("Greater Vancouver", "apartment"), th = g("Greater Vancouver", "townhouse");
+  return apt ? `Condo prices are ${Math.abs(apt.pct_1y).toFixed(1)}% lower than a year ago${th ? ` and townhouses ${Math.abs(th.pct_1y).toFixed(1)}% lower` : ""}, so we have room to negotiate.` : "";
+}
+
+/* ---------- Deck ---------- */
+function deckList() {
+  const me = myId();
+  let list = H.filter(inScope);
+  if (!S.deckShowAll) list = list.filter(h => !voteOf(me, h.k));
+  return list.sort((a, b) => score(b) - score(a));
+}
+function renderDeck() {
+  const list = deckList(), total = H.filter(inScope).length, done = H.filter(inScope).filter(h => voteOf(myId(), h.k)).length;
+  if (S.deckIdx >= list.length) S.deckIdx = Math.max(0, list.length - 1);
+  const h = list[S.deckIdx];
+  const bar = `<div class="deck-bar"><div style="display:grid;gap:6px;flex:1;min-width:220px"><span class="small muted">You've reviewed ${done} of ${total} homes in our range</span><div class="progress"><i style="width:${total ? done / total * 100 : 0}%"></i></div></div>
+    <div class="filters"><button class="toggle" id="d-all" aria-pressed="${S.deckShowAll}">Include reviewed</button>${["Condo", "Townhouse", "House"].map(t => `<button class="toggle" data-type="${t}" aria-pressed="${S.house.types.includes(t)}">${typeName(t)}</button>`).join("")}</div></div>`;
+  if (!h) { $("#v-deck").innerHTML = bar + `<div class="card empty"><span class="glyph">${ICON.House}</span><h3>You've been through every home in range</h3><p class="muted">New listings arrive every day. You can also widen the budget or types under What matters.</p></div>`; return; }
+  const m = monthly(h), r = reasons(h), mine = voteOf(myId(), h.k), p = partnerId(), theirs = p ? voteOf(p, h.k) : null;
+  const facts = [
+    [ICON.space, `${h.sq.toLocaleString()} sqft · ${h.b} bed${h.ba ? ` · ${h.ba} bath` : ""}`, `${typeName(h.t)}${h.pt && h.pt !== h.t && h.pt !== "Apt/Condo" ? ` (${esc(h.pt)})` : ""}`],
+    [ICON.school, h.es ? `${esc(h.es)}${h.er != null ? ` · ${h.er.toFixed(1)}/10` : ""}` : "School not found", h.es ? `${h.ek != null ? `${h.ek} km · ` : ""}${h.ec ? "catchment school" : "nearest, catchment not confirmed"}${h.fr ? " · French immersion" : ""}` : ""],
+    [ICON.walk, `Walk score ${Math.round(h.w)}`, `${h.wg ?? 0} grocery · ${h.wp ?? 0} parks & playgrounds · ${h.wc ?? 0} daycares within 10 min`],
+    [ICON.train, h.stn ? `${esc(h.stn)} SkyTrain` : "SkyTrain", h.skm != null ? `about ${walkMin(h.skm)} min walk (${h.skm} km)` : ""],
+    [ICON.build, h.y ? `Built ${h.y}` : "Year not known", `${h.lx ? h.lx + " finish" : "Finish not scored"}${h.lk ? " · leaky-condo era" : ""}`],
+    [ICON.pin, `${esc(h.lt)} location`, `${esc(h.n)}, ${esc(h.c)} · ${pct(h.lp)} vs similar homes elsewhere`],
+  ];
+  $("#v-deck").innerHTML = bar + `
+  <article class="card home" aria-label="${esc(h.a)}">
+    <div class="home-main">
+      <div class="home-head"><div style="display:grid;gap:6px"><div class="chips">${h.hr ? `<span class="chip good">Hermes shortlist #${h.hr}</span>` : ""}${h.cu ? `<span class="chip good">Price cut ${pct(h.cp, 1)}</span>` : ""}${h.band === "comparison" ? `<span class="chip warn">Above $1.2M</span>` : ""}${h.card ? `<span class="chip">Card facts only</span>` : ""}${h.rs ? `<span class="chip bad">Restriction flagged</span>` : ""}</div>
+        <h2>${esc(h.a)}</h2><span class="muted">${esc(h.n)}, ${esc(h.c)}</span></div><span class="glyph">${ICON[h.t]}</span></div>
+      <div style="display:grid;gap:4px"><div class="price-line"><span class="ask num">${fmtK(h.p)}</span><span class="mo">≈ ${fmt$(m.total)}/mo${m.partial ? "+" : ""}</span></div>
+        <div class="small">${verdict(h)} <span class="muted">· our score ${score(h)} · ${fmt$(m.cash)} down</span></div></div>
+      <div class="facts">${facts.map(([ic, b, s]) => `<div class="fact">${ic}<div><b>${b}</b><span>${s}</span></div></div>`).join("")}</div>
+      <div class="reasons">${r.yes.length ? `<div class="yes"><h3>Why it could work</h3><ul>${r.yes.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}${r.no.length ? `<div class="no"><h3>Watch out for</h3><ul>${r.no.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn" href="${esc(h.u)}" target="_blank" rel="noopener">See photos and listing</a><a class="btn" href="${DASHBOARD}" target="_blank" rel="noopener">Full analysis</a></div>
+    </div>
+    <aside class="home-side">
+      ${minimap(h)}
+      <div style="display:grid;gap:8px"><span class="lab" style="font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)">Your verdict</span>
+        <div class="vote-row">
+          <button class="vote love" data-vote="love" aria-pressed="${mine?.v === "love"}">${ICON.key()}Turn my key<kbd>→</kbd></button>
+          <button class="vote maybe" data-vote="maybe" aria-pressed="${mine?.v === "maybe"}">${ICON.maybe}Maybe<kbd>↑</kbd></button>
+          <button class="vote pass" data-vote="pass" aria-pressed="${mine?.v === "pass"}">${ICON.pass}Not for us<kbd>←</kbd></button>
+        </div>
+        <label class="lab" for="d-note" style="margin-top:4px">A note for us (optional)</label>
+        <textarea id="d-note" placeholder="Love the layout, worried about the busy street…">${esc(mine?.note || "")}</textarea></div>
+      ${partnerBox(h, mine, theirs, p)}
+      <div class="deck-nav"><button class="btn" id="d-prev" ${S.deckIdx ? "" : "disabled"}>Previous</button><span class="small muted" style="align-self:center">${S.deckIdx + 1} of ${list.length}</span><button class="btn" id="d-next" ${S.deckIdx < list.length - 1 ? "" : "disabled"}>Skip for now</button></div>
+    </aside>
+  </article>`;
+  const pn = $("#v-deck .pnote"); if (pn && theirs) pn.textContent = "“" + theirs.note + "”";
+}
+function partnerBox(h, mine, theirs, p) {
+  if (!p) return `<div class="partner-box sealed"><div class="who">${ICON.lock.replace("<svg", '<svg width="20" height="20"')} Your partner</div><span class="small">Their key shows here once they've opened Two Keys and voted.</span></div>`;
+  const who = nameOf(p).split(" ")[0];
+  if (!mine) return `<div class="partner-box sealed"><div class="who">${ICON.lock.replace("<svg", '<svg width="20" height="20"')} ${esc(who)}'s key is sealed</div><span class="small">${theirs ? `${esc(who)} has voted.` : `${esc(who)} hasn't seen it yet.`} Their vote shows once you vote, so neither of you sways the other.</span></div>`;
+  if (!theirs) return `<div class="partner-box"><div class="who">${faceHTML(p)} ${esc(who)} hasn't seen this one yet</div></div>`;
+  const label = { love: "Turned the key", maybe: "Maybe", pass: "Not for us" }[theirs.v];
+  const both = mine.v === "love" && theirs.v === "love";
+  return `<div class="partner-box" style="${both ? "border:2px solid var(--pine);background:var(--pine-soft)" : ""}"><div class="who">${faceHTML(p)} ${esc(who)}: <span class="vote-dot ${theirs.v}">${label}</span></div>${theirs.note ? `<span class="small pnote"></span>` : ""}${both ? `<b style="color:var(--pine)">Both keys turned. It's in Our picks.</b>` : ""}</div>`;
+}
+function castVote(v) {
+  const list = deckList(), h = list[S.deckIdx]; if (!h) return;
+  const note = $("#d-note")?.value.trim() || "";
+  const prev = myVotes()[h.k];
+  myVotes()[h.k] = { v, note, at: new Date().toISOString() };
+  persistVotes();
+  const p = partnerId(), theirs = p && voteOf(p, h.k);
+  if (v === "love" && theirs?.v === "love") toast(`Both keys turned on ${h.a}. It's in Our picks.`);
+  else toast({ love: "Key turned.", maybe: "Saved as maybe.", pass: "Passed." }[v]);
+  if (!S.deckShowAll && !prev) { /* the voted home leaves the list; the same index now shows the next one */ }
+  else if (S.deckIdx < deckList().length - 1) S.deckIdx++;
+  renderAll();
+}
+function persistVotes() { const id = myId(); queueWrite(`votes/${id}`, () => ({ votes: S.votes[id] || {}, updated: new Date().toISOString() })); }
+
+/* ---------- Picks ---------- */
+function planOf(k) { return S.plans[k] || { steps: {}, date: "", notes: "" }; }
+function savePlan(k, patch) { S.plans[k] = { ...planOf(k), ...patch }; queueWrite(`plans/${k}`, () => S.plans[k]); }
+function renderPicks() {
+  const c = counts(), p = partnerId(), me = myId();
+  const loveMine = H.filter(h => voteOf(me, h.k)?.v === "love");
+  const noteBlock = (id, h) => { const v = voteOf(id, h.k); if (!v) return `<div class="note" style="--c:${colorOf(id)}"><div class="who">${esc(nameOf(id).split(" ")[0])} <span class="vote-dot none">not yet</span></div></div>`;
+    return `<div class="note" style="--c:${colorOf(id)}"><div class="who">${esc(nameOf(id).split(" ")[0])} <span class="vote-dot ${v.v}">${{ love: "Key turned", maybe: "Maybe", pass: "Not for us" }[v.v]}</span></div><div class="nt"></div></div>`; };
+  const pickCard = h => { const pl = planOf(h.k), m = monthly(h), done = STEPS.filter(([s]) => pl.steps?.[s]).length;
+    return `<article class="card pick" data-k="${esc(h.k)}">
+      <div class="pick-head"><span class="lock">${ICON.lockOpen}</span><div><h3>${esc(h.a)}</h3><span class="small muted">${esc(h.n)}, ${esc(h.c)} · ${fmtK(h.p)} · ≈${fmt$(m.total)}/mo · ${h.sq.toLocaleString()} sqft</span></div><span class="chip good">${done}/${STEPS.length} done</span></div>
+      <div class="two-notes">${noteBlock(me, h)}${p ? noteBlock(p, h) : ""}</div>
+      <div class="grid2" style="gap:14px">
+        <div class="steps">${STEPS.map(([s, t]) => `<label class="step ${pl.steps?.[s] ? "done" : ""}"><input type="checkbox" data-step="${s}" ${pl.steps?.[s] ? "checked" : ""}><span>${esc(t)}</span></label>`).join("")}</div>
+        <div style="display:grid;gap:10px;align-content:start"><div><label class="lab" for="date-${esc(h.k)}">Viewing date</label><input type="date" id="date-${esc(h.k)}" data-date value="${esc(pl.date || "")}"></div>
+          <div><label class="lab" for="notes-${esc(h.k)}">Shared notes</label><textarea id="notes-${esc(h.k)}" data-notes placeholder="Questions for the realtor, what we saw at the viewing…">${esc(pl.notes || "")}</textarea></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="${esc(h.u)}" target="_blank" rel="noopener">Listing</a><button class="btn" data-open="${esc(h.k)}">Details</button></div></div>
+      </div></article>`; };
+  const rows = (list, why) => list.length ? `<div class="card">${list.map(h => `<div class="row-home"><div><b>${esc(h.a)}</b><div class="small muted">${esc(h.n)} · ${fmtK(h.p)}${why ? " · " + why(h) : ""}</div><div class="two-notes" style="margin-top:8px">${noteBlock(me, h)}${p ? noteBlock(p, h) : ""}</div></div><button class="btn" data-open="${esc(h.k)}">Look again</button></div>`).join("")}</div>` : "";
+  $("#v-picks").innerHTML = `
+    <div style="display:grid;gap:8px"><div class="eyebrow">Both keys turned</div><h2>${c.loveBoth.length ? `${c.loveBoth.length} home${c.loveBoth.length === 1 ? "" : "s"} you both love` : p ? "No shared favourites yet" : "Waiting for your partner"}</h2>
+      <p class="muted">${c.loveBoth.length ? "Work through the checklist together. Ticks, dates and notes save for both of you." : p ? "Keep going through the deck. A home lands here the moment you both turn your key." : "Once your partner votes, the homes you both love land here. Until then, these are your favourites."}</p></div>
+    ${(c.loveBoth.length ? c.loveBoth : p ? [] : loveMine).map(pickCard).join("")}
+    ${c.split.length ? `<div style="display:grid;gap:8px"><div class="eyebrow">Talk about these</div><h3>One of you loves it, the other doesn't</h3></div>${rows(c.split)}` : ""}
+    ${p && c.waitingPartner.length ? `<div style="display:grid;gap:8px"><div class="eyebrow">One key turned</div><h3>Your favourites ${esc(nameOf(p).split(" ")[0])} hasn't seen yet</h3></div>${rows(c.waitingPartner)}` : ""}`;
+  // Notes are other people's input: fill with textContent.
+  $("#v-picks").querySelectorAll(".row-home, .pick").forEach(card => {
+    const k = card.dataset.k || card.querySelector("[data-open]")?.dataset.open;
+    const ids = [me, p].filter(Boolean);
+    card.querySelectorAll(".note .nt").forEach((el, i) => { el.textContent = voteOf(ids[i], k)?.note || ""; });
+  });
+}
+
+/* ---------- Priorities ---------- */
+function hexChart(ws) {
+  const c = 150, R = 105, n = ATTRS.length, pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n, r = v / 10 * R; return [c + r * Math.cos(a), c + r * Math.sin(a)]; };
+  let g = "";
+  for (const v of [2.5, 5, 7.5, 10]) g += `<polygon points="${ATTRS.map((_, i) => pt(i, v).join(",")).join(" ")}" fill="none" stroke="var(--line)"/>`;
+  ATTRS.forEach(([k, name], i) => { const [x, y] = pt(i, 10), [lx, ly] = pt(i, 12.6); g += `<line x1="${c}" y1="${c}" x2="${x}" y2="${y}" stroke="var(--line)"/><text x="${lx}" y="${ly + 4}" text-anchor="middle">${name.split(",")[0]}</text>`; });
+  for (const [w, col] of ws) g += `<polygon points="${ATTRS.map(([k], i) => pt(i, w[k]).join(",")).join(" ")}" fill="${col}" fill-opacity=".18" stroke="${col}" stroke-width="2.5"/>`;
+  return `<svg class="hex" viewBox="-40 -10 380 320" role="img" aria-label="Both of your priorities, overlaid">${g}</svg>`;
+}
+function renderPrio() {
+  const me = myId(), p = partnerId(), mw = weightsOf(me) || DEFAULT_W, pw = p ? weightsOf(p) : null;
+  const cities = [...new Set(H.map(h => h.c))].sort();
+  const agree = pw ? ATTRS.map(([k, n]) => [n, Math.abs(mw[k] - pw[k])]).sort((a, b) => a[1] - b[1]) : null;
+  $("#v-prio").innerHTML = `
+    <div style="display:grid;gap:8px"><div class="eyebrow">What matters</div><h2>Set your own priorities. The deck blends both of yours.</h2>
+      <p class="muted">Move the sliders to say how much each thing matters to you, from 0 (don't care) to 10 (a must). Homes are ranked by the average of both of you.</p></div>
+    <div class="prio">
+      <div class="card pad" style="display:grid;gap:14px"><h3>${esc(nameOf(me).split(" ")[0])}'s priorities</h3>
+        ${ATTRS.map(([k, n]) => `<div class="slider"><div class="top"><label for="w-${k}">${n}</label><b class="num" id="wv-${k}">${mw[k]}</b></div><input type="range" id="w-${k}" min="0" max="10" step="1" value="${mw[k]}" data-w="${k}">${pw ? `<span class="theirs">${esc(nameOf(p).split(" ")[0])}: ${pw[k]}</span>` : ""}</div>`).join("")}</div>
+      <div class="card pad" style="display:grid;gap:12px;align-content:start;justify-items:center"><h3 style="justify-self:start">Where you agree</h3>
+        ${hexChart([[mw, colorOf(me)], ...(pw ? [[pw, colorOf(p)]] : [])])}
+        <div class="chips" style="justify-self:start"><span class="chip"><i style="width:10px;height:10px;border-radius:50%;background:${colorOf(me)}"></i>${esc(nameOf(me).split(" ")[0])}</span>${pw ? `<span class="chip"><i style="width:10px;height:10px;border-radius:50%;background:${colorOf(p)}"></i>${esc(nameOf(p).split(" ")[0])}</span>` : `<span class="chip">Your partner's shape appears once they set theirs</span>`}</div>
+        ${agree ? `<p class="small" style="justify-self:start">You agree most on <b>${agree[0][0].toLowerCase()}</b> and <b>${agree[1][0].toLowerCase()}</b>. You differ most on <b>${agree[agree.length - 1][0].toLowerCase()}</b>, so that's worth talking through.</p>` : ""}
+      </div>
+    </div>
+    <div class="card pad" style="display:grid;gap:14px"><h3>Our search, shared by both of us</h3>
+      <div class="settings-grid">
+        <div><label class="lab" for="h-max">Max price</label><input type="number" id="h-max" step="25000" min="400000" value="${S.house.maxPrice}"></div>
+        <div><label class="lab" for="h-down">Down payment %</label><input type="number" id="h-down" min="5" max="100" value="${S.house.down}"></div>
+        <div><label class="lab" for="h-rate">Mortgage rate %</label><input type="number" id="h-rate" min="0" max="15" step="0.05" value="${S.house.rate}"></div>
+        <div><label class="lab" for="h-amort">Amortization (years)</label><input type="number" id="h-amort" min="5" max="35" value="${S.house.amort}"></div>
+      </div>
+      <div><span class="lab">Types</span><div class="filters">${["Condo", "Townhouse", "House"].map(t => `<button class="toggle" data-htype="${t}" aria-pressed="${S.house.types.includes(t)}">${typeName(t)}</button>`).join("")}</div></div>
+      <div><span class="lab">Cities (none selected = all)</span><div class="filters">${cities.map(c => `<button class="toggle" data-hcity="${esc(c)}" aria-pressed="${S.house.cities.includes(c)}">${esc(c)}</button>`).join("")}</div></div>
+      <label class="step"><input type="checkbox" id="h-hide" ${S.house.hideRestricted ? "checked" : ""}><span>Hide leasehold, presales, age-restricted and den-as-bedroom listings</span></label>
+      <p class="tiny muted">The rate is a placeholder. Use the one your broker quotes. Monthly cost = mortgage + strata + property tax.</p>
+    </div>`;
+}
+let prioTimer = null;
+function savePrefs() { clearTimeout(prioTimer); prioTimer = setTimeout(() => { const id = myId(); queueWrite(`prefs/${id}`, () => ({ w: S.prefs[id].w, updated: new Date().toISOString() })); }, 600); }
+let houseTimer = null;
+function saveHouse() { clearTimeout(houseTimer); houseTimer = setTimeout(() => queueWrite("settings/household", () => ({ ...S.house })), 500); }
+
+/* ---------- Report ---------- */
+function renderReport() {
+  const g = (a, t) => DATA.gvr.find(x => x.area === a && x.property_type === t);
+  const gv = ["apartment", "townhouse", "detached"].map(t => [t, g("Greater Vancouver", t)]).filter(x => x[1]);
+  const areas = [...DATA.areas].sort((a, b) => a.premium - b.premium);
+  const rents = Object.entries(DATA.rents).sort((a, b) => b[1].median - a[1].median);
+  const inS = H.filter(inScope), deals = inS.filter(h => h.g <= -10 && !h.rs);
+  const goodSchool = inS.filter(h => h.er >= 7).length, walky = inS.filter(h => h.w >= 85).length, leaky = inS.filter(h => h.lk).length;
+  const span = Math.max(...areas.map(a => Math.abs(a.premium)), 10);
+  const bars = areas.map(a => `<div class="bar"><span>${esc(a.area)}</span><em><i style="left:${a.premium < 0 ? 50 - Math.abs(a.premium) / span * 50 : 50}%;width:${Math.abs(a.premium) / span * 50}%;background:${a.premium < 0 ? "var(--pine)" : "var(--rose)"}"></i><i style="left:50%;width:1px;background:var(--ink-3)"></i></em><span class="num">${pct(a.premium)}</span></div>`).join("");
+  const top = [...deals].sort((a, b) => score(b) - score(a)).slice(0, 4);
+  const scan = new Date(DATA.scan + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" });
+  $("#v-report").innerHTML = `<article class="letter">
+    <div class="eyebrow">The report · ${esc(scan)}</div>
+    <h2>Where the market is, and where our best options are</h2>
+    <p>This is a buyer's market, and the numbers say so. The benchmark price for a typical Greater Vancouver ${gv.map(([t, r]) => `${t === "apartment" ? "condo" : t} is down ${Math.abs(r.pct_1y).toFixed(1)}%`).join(", ")} over the past year. Sellers are cutting prices and listings sit longer. Offering below the asking price is normal right now, not rude.</p>
+    <p class="pull">${deals.length} of the ${inS.length} homes in our range ask at least 10% less than similar homes nearby, with no red flags on tenure.</p>
+    <p>We compare every home with others of the same size, age, type and neighbourhood. When one asks much less, either the seller is motivated or there's something the numbers can't see, like a noisy street or a special levy. A gap of 10% or more is a reason to look closer. Our model is usually within about ${Math.round(DATA.model.sigma)}% of the real asking price, so smaller gaps are just noise.</p>
+    <h3>Where you pay for the address</h3>
+    <p>For the same home, location alone moves the price. Here is what each city asks compared with the average, after accounting for size, age and type:</p>
+    <div class="card pad bars">${bars}</div>
+    <p>Vancouver costs the most for the same space. ${esc(areas[0].area)} and ${esc(areas[1].area)} give the most home for the money. The most sought-after neighbourhoods right now are ${DATA.nb_top.slice(0, 3).map(n => esc(n.neighbourhood)).join(", ")}. The best value is in ${DATA.nb_bottom.slice(-3).map(n => esc(n.neighbourhood)).join(", ")}.</p>
+    <h3>Schools, walking and the building itself</h3>
+    <p>${goodSchool} homes in our range are near an elementary school rated 7 out of 10 or better, based on the province's Grade 4 and 7 test results. ${walky} are in places where groceries, parks and daycare are a short walk away. Each extra decade of building age takes about ${Math.abs(Math.round((Math.exp(DATA.model.age10 || -0.05) - 1) * 100))}% off the price. ${leaky} homes were built between 1983 and 1999, the leaky-condo years, so ask for proof the building envelope was repaired. Premium finishes add surprisingly little to the price but show up in higher strata fees.</p>
+    <h3>Owning versus renting</h3>
+    <p>A typical 3-bedroom rents for ${rents.map(([c, r]) => `${fmt$(r.median)} in ${esc(c)}`).join(", ")} a month. With ${S.house.down}% down at ${S.house.rate}%, owning a home under $1.2M usually costs more each month than renting a similar one. Buying pays off through the mortgage principal we pay down and long-term appreciation, so it makes most sense if we plan to stay at least five to seven years.</p>
+    ${top.length ? `<h3>Four to look at first</h3><div class="card">${top.map(h => `<div class="row-home"><div><b>${esc(h.a)}</b><div class="small muted">${esc(h.n)}, ${esc(h.c)} · ${fmtK(h.p)} · asks ${Math.abs(Math.round(h.g))}% below similar homes${h.er ? ` · school ${h.er.toFixed(1)}/10` : ""}</div></div><button class="btn" data-open="${esc(h.k)}">Open</button></div>`).join("")}</div>` : ""}
+    <h3>How far to trust this</h3>
+    <p class="small muted">These are asking prices, not sale prices. ${DATA.sources.research_listings} homes come from Hermes's detailed research and ${DATA.sources.inventory_listings} from its wider inventory, which only reads the listing card. School catchments shown as "nearest" need checking with the district. Before any offer, ask our realtor for recent sold prices in the same building and read the strata documents.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn primary" href="${DASHBOARD}" target="_blank" rel="noopener">Open the full analysis</a><a class="btn" href="${TWIN}" target="_blank" rel="noopener">Explore the 3D city</a></div>
+  </article>`;
+}
+
+/* ---------- Shell ---------- */
+function renderSyncNote() {
+  const el = $("#sync-note");
+  if (S.mode === "shared" && !readOnly) { el.hidden = true; return; }
+  el.hidden = false; el.className = "banner warn";
+  el.textContent = readOnly ? "You can look around, but your votes won't be saved. Ask for Editor access in the Share menu." : "Your votes are saved in this browser only. Open the shared link inside Claude so your partner sees them too.";
+}
+function renderAll() {
+  renderPeople(); renderSyncNote();
+  const c = counts();
+  $("#c-deck").textContent = c.toReview.length; $("#c-picks").textContent = c.loveBoth.length || "";
+  ({ today: renderToday, deck: renderDeck, picks: renderPicks, prio: renderPrio, report: renderReport })[S.view]();
+}
+function go(view, key) {
+  S.view = view;
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === view));
+  document.querySelectorAll("section.view").forEach(s => s.hidden = s.id !== "v-" + view);
+  if (key) {
+    if (!deckList().some(h => h.k === key)) S.deckShowAll = true;
+    const i = deckList().findIndex(h => h.k === key);
+    if (i < 0) toast("That home is outside our current search settings. Widen them under What matters.");
+    S.deckIdx = Math.max(0, i);
+  }
+  renderAll(); scrollTo({ top: 0, behavior: "smooth" });
+  try { localStorage.setItem(LS + ".view", view); } catch {}
+}
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+
+document.addEventListener("click", e => {
+  const tab = e.target.closest("nav.tabs button"); if (tab) return go(tab.dataset.v);
+  const g = e.target.closest("[data-go]"); if (g) { e.preventDefault(); return go(g.dataset.go); }
+  const o = e.target.closest("[data-open]"); if (o) return go("deck", o.dataset.open);
+  const v = e.target.closest("[data-vote]"); if (v) return castVote(v.dataset.vote);
+  if (e.target.closest("#d-prev")) { S.deckIdx = Math.max(0, S.deckIdx - 1); return renderDeck(); }
+  if (e.target.closest("#d-next")) { S.deckIdx++; return renderDeck(); }
+  if (e.target.closest("#d-all")) { S.deckShowAll = !S.deckShowAll; S.deckIdx = 0; return renderAll(); }
+  const t = e.target.closest("[data-type], [data-htype]"); if (t) { const ty = t.dataset.type || t.dataset.htype; S.house.types = S.house.types.includes(ty) ? S.house.types.filter(x => x !== ty) : [...S.house.types, ty]; if (!S.house.types.length) S.house.types = [ty]; saveHouse(); S.deckIdx = 0; return renderAll(); }
+  const c = e.target.closest("[data-hcity]"); if (c) { const ci = c.dataset.hcity; S.house.cities = S.house.cities.includes(ci) ? S.house.cities.filter(x => x !== ci) : [...S.house.cities, ci]; saveHouse(); return renderAll(); }
+});
+document.addEventListener("input", e => {
+  const w = e.target.closest("[data-w]");
+  if (w) { const id = myId(); S.prefs[id] = { w: { ...(weightsOf(id) || DEFAULT_W), [w.dataset.w]: +w.value } }; $("#wv-" + w.dataset.w).textContent = w.value; savePrefs(); return; }
+  const m = { "h-max": "maxPrice", "h-down": "down", "h-rate": "rate", "h-amort": "amort" }[e.target.id];
+  if (m && e.target.value !== "" && !isNaN(+e.target.value)) { S.house[m] = +e.target.value; saveHouse(); return; }
+  if (e.target.id === "h-hide") { S.house.hideRestricted = e.target.checked; saveHouse(); return; }
+  const card = e.target.closest(".pick"); if (!card) return;
+  const k = card.dataset.k;
+  if (e.target.dataset.step) { const steps = { ...(planOf(k).steps || {}), [e.target.dataset.step]: e.target.checked }; savePlan(k, { steps }); e.target.closest(".step").classList.toggle("done", e.target.checked); }
+  if (e.target.hasAttribute("data-date")) savePlan(k, { date: e.target.value });
+  if (e.target.hasAttribute("data-notes")) { clearTimeout(card._t); const val = e.target.value; card._t = setTimeout(() => savePlan(k, { notes: val }), 700); }
+});
+document.addEventListener("change", e => { if (e.target.closest("#v-prio") || e.target.closest(".pick [data-date]")) renderAll(); });
+document.addEventListener("keydown", e => {
+  if (S.view !== "deck" || e.target.closest("textarea, input, select")) return;
+  if (e.key === "ArrowRight") castVote("love"); else if (e.key === "ArrowUp") { e.preventDefault(); castVote("maybe"); } else if (e.key === "ArrowLeft") castVote("pass");
+});
+
+/* ---------- Boot ---------- */
+(function bootLocal() {
+  const j = loadLocal();
+  S.votes.local = j.votes || {}; if (j.prefs) S.prefs.local = j.prefs; S.plans = j.plans || {}; if (j.house) S.house = { ...DEFAULT_HOUSE, ...j.house };
+  let v = "today"; try { v = localStorage.getItem(LS + ".view") || "today"; } catch {}
+  go(["today", "deck", "picks", "prio", "report"].includes(v) ? v : "today");
+})();
+(async function bootShared() {
+  if (!window.claude?.use) return;
+  [db, userCap] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (userCap) { const me = await userCap.me(); S.me = me.id; S.meName = me.name; S.meColor = me.color; S.meAvatar = me.avatarUrl;
+    const can = await userCap.can("data.write"); if (can === false) readOnly = true; }
+  if (!db || !S.me) { renderAll(); return; }
+  S.mode = "shared";
+  // First shared visit on this device: carry over anything voted locally before.
+  const local = S.votes.local; delete S.votes.local;
+  const onErr = err => { if (err?.code === "revoked") { S.mode = "local"; renderAll(); } };
+  let seeded = false;
+  db.collection("votes").onSnapshot(snap => {
+    const next = {}; snap.docs.forEach(d => next[d.id] = (d.data() || {}).votes || {});
+    const mine = S.votes[S.me]; S.votes = next;
+    if (mine && writers[`votes/${S.me}`]?.busy) S.votes[S.me] = mine;   // keep our unsaved edits during a write
+    if (!seeded && !snap.metadata.fromCache) { seeded = true; if (local && Object.keys(local).length && !Object.keys(S.votes[S.me] || {}).length && !readOnly) { S.votes[S.me] = local; persistVotes(); } }
+    names().then(renderAll);
+  }, onErr);
+  db.collection("prefs").onSnapshot(snap => { snap.docs.forEach(d => { if (d.id !== S.me || !prioTimer) S.prefs[d.id] = d.data(); }); if (S.view !== "prio" || !document.activeElement?.dataset?.w) names().then(renderAll); }, onErr);
+  db.collection("plans").onSnapshot(snap => { const next = {}; snap.docs.forEach(d => next[d.id] = d.data()); S.plans = next; if (!document.activeElement?.closest?.(".pick")) renderAll(); }, onErr);
+  db.doc("settings/household").onSnapshot(d => { if (d.exists && !document.activeElement?.closest?.("#v-prio")) { S.house = { ...DEFAULT_HOUSE, ...d.data() }; renderAll(); } }, onErr);
+  renderAll();
+})();
+</script>
