@@ -16,7 +16,7 @@ data that isn't redistributable, so **no listing data, prices or analysis output
 | --- | --- | --- |
 | Buildings, roads, parks, shops and services | OpenStreetMap | © OpenStreetMap contributors, ODbL |
 | Land and shoreline | ParcelMap BC | Open Government Licence – British Columbia |
-| School locations, FSA results | BC Data Catalogue | Open Government Licence – British Columbia |
+| School locations, FSA results, graduation rates, Grade 10/12 assessments, enrolment, class size, completion rates | BC Data Catalogue | Open Government Licence – British Columbia |
 | Terrain | Terrain Tiles on AWS (Canadian Digital Elevation Model, SRTM) | see the Terrain Tiles attribution |
 
 School ratings rank each school's 2023–2026 Grade 4 and 7 Foundation Skills Assessment results among Metro Vancouver

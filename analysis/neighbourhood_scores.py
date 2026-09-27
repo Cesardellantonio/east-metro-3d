@@ -200,12 +200,21 @@ def load_all_schools(bbox=(-123.32, 49.12, -122.64, 49.38)):
     f["NUMBER_WRITERS"] = pd.to_numeric(f.NUMBER_WRITERS, errors="coerce").fillna(20)
     f = f[f.AVG_SCORE.notna()]
     f["w"] = f.AVG_SCORE * f.NUMBER_WRITERS
-    g = f.groupby("SCHOOL_NUMBER").agg(ws=("w", "sum"), n=("NUMBER_WRITERS", "sum"))
+    f["meet"] = _num(f.NUMBER_ONTRACK).fillna(0) + _num(f.NUMBER_EXTENDING).fillna(0)
+    f["wk"] = _num(f.NUMBER_WRITERS).where(_num(f.NUMBER_ONTRACK).notna())
+    g = f.groupby("SCHOOL_NUMBER").agg(ws=("w", "sum"), n=("NUMBER_WRITERS", "sum"), meet=("meet", "sum"), wk=("wk", "sum"))
     k = k.join((g.ws / g.n).rename("fsa"), on="MINCODE").join(g.n.rename("writers"), on="MINCODE")
+    k = k.join((g.meet / g.wk * 100).where(g.wk >= 20).round().rename("fsa_meet"), on="MINCODE")
     ref = load_schools()  # public Metro schools: the scale every rating is placed on
     ref = ref[ref.fsa_avg.notna() & (ref.writers >= 20)].fsa_avg.to_numpy()
     k["rating"] = k.fsa.map(lambda v: round(float((ref < v).mean() * 10), 1) if pd.notna(v) else None)
-    return k.reset_index(drop=True)
+    k = k.reset_index(drop=True)
+    if (EXT / "schools").exists():  # profiles: size, class size, graduation, Grade 10/12 assessments
+        prof = school_profiles()
+        k = k.join(prof, on="MINCODE")
+        k["sec_rating"] = k.MINCODE.map(secondary_ratings(prof, k))
+        k["district_completion"] = k.DISTRICT_NUMBER.map(district_completion())
+    return k
 
 
 def school_access(homes, schools):
@@ -245,3 +254,77 @@ def school_access(homes, schools):
                     "walk15": int(((d <= 1.2) & pub & (lvl == "elem")).sum()),
                     "indep3": int(((d <= 3.0) & ~pub).sum())})
     return out
+
+
+# ---------- School profiles: size, class size, graduation, Grade 10/12 assessments ----------
+SCH = EXT / "schools"
+RECENT = ["2022/2023", "2023/2024", "2024/2025"]
+METRO_ALL = METRO_DISTRICTS
+
+
+def _num(s):
+    return pd.to_numeric(s, errors="coerce")
+
+
+def school_profiles():
+    """Per-school facts from BC open data (Open Government Licence – BC), keyed by MINCODE."""
+    out = pd.DataFrame()
+    # Enrolment (latest year) and English-language learners.
+    h = pd.read_csv(SCH / "student_headcount_by_grade_2017_18_to_2025_26.csv", encoding="latin-1", dtype=str, low_memory=False)
+    h = h[(h.DATA_LEVEL == "School Level") & (h.GRADE == "All Grades")]
+    latest = h.SCHOOL_YEAR.max()
+    h = h[h.SCHOOL_YEAR == latest].assign(total=lambda d: _num(d.TOTAL_STUDENTS), ell=lambda d: _num(d.ELL_STUDENTS))
+    h = h.sort_values("total").drop_duplicates("SCHOOL_NUMBER", keep="last").set_index("SCHOOL_NUMBER")
+    out["enrol"] = h.total
+    out["ell_pct"] = (h.ell / h.total * 100).round()
+    out["enrol_year"] = latest
+    # Average class size (public schools report it).
+    c = pd.read_csv(SCH / "class_size_2006-07_to_2025-26.csv", encoding="latin-1", dtype=str)
+    c = c[(c.DATA_LEVEL == "School Level") & (c.SCHOOL_YEAR == c.SCHOOL_YEAR.max())].set_index("SCHOOL_NUMBER")
+    out = out.join(_num(c.AVG_CLASS_SIZE_ALL_GRADES).round(1).rename("class_size"), how="outer")
+    # First-time Grade 12 graduation and honours, pooled over the last three years.
+    g = pd.read_csv(SCH / "first_time_g12_graduation_rate_1996-97_to_2024-25_residents_only.csv", encoding="latin-1", dtype=str)
+    g = g[(g.DATA_LEVEL == "School Level") & (g.SUB_POPULATION == "All Students") & g.SCHOOL_YEAR.isin(RECENT)].copy()
+    for col in ["FIRST_TIME_GRADE_12_COUNT", "FIRST_TIME_GRADUATION_COUNT", "HONOURS_COUNT"]:
+        g[col] = _num(g[col])
+    gg = g.groupby("SCHOOL_NUMBER")[["FIRST_TIME_GRADE_12_COUNT", "FIRST_TIME_GRADUATION_COUNT", "HONOURS_COUNT"]].sum(min_count=1)
+    gg = gg[gg.FIRST_TIME_GRADE_12_COUNT >= 20]
+    out = out.join(pd.DataFrame({"grad_rate": (gg.FIRST_TIME_GRADUATION_COUNT / gg.FIRST_TIME_GRADE_12_COUNT * 100).round(),
+                                 "honours_rate": (gg.HONOURS_COUNT / gg.FIRST_TIME_GRADE_12_COUNT * 100).round(),
+                                 "grade12": gg.FIRST_TIME_GRADE_12_COUNT}), how="outer")
+    # Grade 10/12 graduation assessments: mean score per writer, and share proficient or extending.
+    a = pd.read_csv(SCH / "graduation_assessment_2017-18_to_2024-25_proficiency_result.csv", encoding="latin-1", dtype=str)
+    a = a[(a.DATA_LEVEL == "School Level") & (a.SUB_POPULATION == "All Students") & a.SCHOOL_YEAR.isin(RECENT) & (a.ASSESSMENT_LANGUAGE == "English")].copy()
+    a["w"], a["score"] = _num(a.NUMBER_WRITERS), _num(a.SCORE)
+    a["prof"] = _num(a.NUMBER_PROFICIENT) + _num(a.NUMBER_EXTENDING)  # NaN when either is masked (<10)
+    rows = {}
+    for (school, test), d in a.groupby(["SCHOOL_NUMBER", "GRADUATION_ASSESSMENT"]):
+        w = d.w.sum()
+        if w >= 20:
+            known = d[d.prof.notna()]
+            rows.setdefault(school, {})[test] = (d.score.sum() / w, (known.prof.sum() / known.w.sum() * 100) if known.w.sum() >= 20 else None)
+    ga = pd.DataFrame({s: {"ga_num": v.get("Numeracy Assessment 10", (None, None))[0], "ga_lit10": v.get("Literacy Assessment 10", (None, None))[0],
+                           "ga_lit12": v.get("Literacy Assessment 12", (None, None))[0],
+                           "num_prof": v.get("Numeracy Assessment 10", (None, None))[1], "lit_prof": v.get("Literacy Assessment 10", (None, None))[1]}
+                       for s, v in rows.items()}).T
+    out = out.join(ga, how="outer")
+    return out
+
+
+def district_completion():
+    c = pd.read_csv(SCH / "completion_rate_residents_only_1999-2000_to_2024-2025.csv", encoding="latin-1", dtype=str)
+    c = c[(c.SUB_POPULATION == "All Students") & (c.COMPLETION_RATE_MODEL == "6 Year Completion") & (c.PUBLIC_OR_INDEPENDENT == "Public School")
+          & (c.DATA_LEVEL == "District Level")]
+    c = c[c.YEAR_6_OF_COHORT == c.YEAR_6_OF_COHORT.max()].drop_duplicates("DISTRICT_NUMBER")
+    return {r.DISTRICT_NUMBER: round(float(r.ESTIMATED_COMPLETION_RATE)) for r in c.itertuples() if pd.notna(_num(r.ESTIMATED_COMPLETION_RATE))}
+
+
+def secondary_ratings(prof: pd.DataFrame, schools: pd.DataFrame):
+    """0–10 rating for secondaries from Grade 10/12 assessments, ranked among Metro public secondaries."""
+    cols = ["ga_num", "ga_lit10", "ga_lit12"]
+    ref = prof.loc[prof.index.isin(schools[schools.public & schools.level.isin(["sec", "k12"])].MINCODE), cols].astype(float)
+    pct = pd.DataFrame(index=prof.index)
+    for c in cols:
+        r = ref[c].dropna().to_numpy()
+        pct[c] = prof[c].astype(float).map(lambda v: (r < v).mean() if pd.notna(v) and len(r) else np.nan)
+    return (pct.mean(axis=1, skipna=True) * 10).round(1)

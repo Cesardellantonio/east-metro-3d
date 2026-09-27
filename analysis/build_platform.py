@@ -47,6 +47,15 @@ def edge_distance(poly, x, z):
     return float(np.hypot(q[:, 0] - x, q[:, 1] - z).min())
 
 
+def _f(r, name):
+    """A school profile number, or None when the source doesn't publish it."""
+    v = getattr(r, name, None)
+    try:
+        return None if v is None or v != v else round(float(v), 1)
+    except (TypeError, ValueError):
+        return None
+
+
 def main():
     PLAT.mkdir(parents=True, exist_ok=True)
     twin = json.loads((OUT / "twin" / "twin_data.json").read_text())
@@ -96,7 +105,9 @@ def main():
     for h, acc in zip(tkdata["homes"], access):
         h["sa"] = acc
     schools = [{"name": r.SCHOOL_NAME, "x": round((r.lon - W["lon0"]) * W["mx"], 1), "z": round(-(r.lat - W["lat0"]) * W["mz"], 1),
-                "level": r.level, "public": bool(r.public), "rating": None if pd.isna(r.rating) else float(r.rating), "french": bool(r.french),
+                "level": r.level, "public": bool(r.public), "rating": None if pd.isna(r.rating) else float(r.rating), "french": bool(r.french), "sec_rating": _f(r, "sec_rating"), "enrol": _f(r, "enrol"), "ell": _f(r, "ell_pct"), "class": _f(r, "class_size"),
+                "grad": _f(r, "grad_rate"), "hon": _f(r, "honours_rate"), "nump": _f(r, "num_prof"), "litp": _f(r, "lit_prof"),
+                "dist_comp": _f(r, "district_completion") if r.public else None, "meet": _f(r, "fsa_meet"),
                 "city": r.PHYSICAL_ADDRESS_CITY} for r in sch.itertuples()]
     data = {**{k: v for k, v in tkdata.items() if k != "map"}, "world": W, "terrain": twin["terrain"], "schools": schools,
             "stations": twin["stations"]}

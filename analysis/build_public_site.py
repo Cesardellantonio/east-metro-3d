@@ -22,8 +22,19 @@ def public_schools(W):
     for r in load_all_schools().itertuples():
         out.append({"name": r.SCHOOL_NAME, "x": round((r.lon - W["lon0"]) * W["mx"], 1), "z": round(-(r.lat - W["lat0"]) * W["mz"], 1),
                     "level": r.level, "public": bool(r.public), "rating": None if r.rating != r.rating or r.rating is None else float(r.rating),
-                    "french": bool(r.french)})
+                    "french": bool(r.french), "sec_rating": _f(r, "sec_rating"), "enrol": _f(r, "enrol"), "ell": _f(r, "ell_pct"), "class": _f(r, "class_size"),
+                "grad": _f(r, "grad_rate"), "hon": _f(r, "honours_rate"), "nump": _f(r, "num_prof"), "litp": _f(r, "lit_prof"),
+                "dist_comp": _f(r, "district_completion") if r.public else None, "meet": _f(r, "fsa_meet")})
     return out
+
+
+def _f(r, name):
+    """A school profile number, or None when the source doesn't publish it."""
+    v = getattr(r, name, None)
+    try:
+        return None if v is None or v != v else round(float(v), 1)
+    except (TypeError, ValueError):
+        return None
 
 
 def main():
