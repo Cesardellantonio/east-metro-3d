@@ -196,6 +196,25 @@ body.public .homes-only { display: none !important; }
 .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
 .meter i { display: block; height: 100%; background: var(--pine); }
 .outcome { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; font-size: 13.5px; }
+.finder { position: relative; }
+.finder input { width: 100%; font: 15px var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 9px 34px 9px 11px; }
+.finder .clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; font-size: 18px; color: var(--ink-3); cursor: pointer; padding: 4px; }
+.finder .drop { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); max-height: 320px; overflow-y: auto; z-index: 30; padding: 4px; }
+.finder .opt { display: grid; grid-template-columns: 1fr auto; gap: 8px; width: 100%; text-align: left; border: 0; background: none; padding: 8px 9px; border-radius: 8px; cursor: pointer; font: inherit; color: inherit; }
+.finder .opt[aria-selected="true"], .finder .opt:hover { background: var(--paper-2); }
+.finder .opt small { color: var(--ink-3); font-size: 12px; }
+.finder .kind { font: 500 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--brass); align-self: center; }
+.hood-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; padding: 7px 10px; border-radius: 10px; background: var(--brass-soft); color: var(--ink); font-size: 13.5px; font-weight: 700; }
+.hood-chip button { border: 0; background: none; cursor: pointer; font-weight: 700; color: var(--brass); }
+.hstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.hstats div { background: var(--paper-2); border-radius: 10px; padding: 8px; display: grid; gap: 1px; }
+.hstats b { font: 800 17px var(--display); }
+.hstats span { font-size: 11.5px; color: var(--ink-2); line-height: 1.25; }
+.hlist { display: grid; gap: 2px; }
+.hrow { display: grid; grid-template-columns: 34px 1fr auto; gap: 9px; align-items: center; width: 100%; text-align: left; border: 0; background: none; padding: 7px 6px; border-radius: 10px; cursor: pointer; font: inherit; color: inherit; }
+.hrow:hover { background: var(--paper-2); }
+.hrow b { font-size: 13.5px; display: block; line-height: 1.25; }
+.hrow span.sub { font-size: 12px; color: var(--ink-2); }
 .sgroup { font: 500 11px var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin: 6px 0 2px; }
 .school-card .big { font: 800 40px/1 var(--display); }
 @media (max-width: 820px) {
@@ -229,6 +248,10 @@ body.public .homes-only { display: none !important; }
 </header>
 
 <aside id="rail" class="glass" aria-label="Map controls">
+  <div class="homes-only"><label class="lab" for="finder-in">Find a neighbourhood or address</label>
+    <div class="finder"><input id="finder-in" type="text" autocomplete="off" placeholder="Metrotown, Heritage Mountain, 83 Moody St…" role="combobox" aria-expanded="false" aria-controls="finder-drop"><button class="clear" id="finder-x" aria-label="Clear search" hidden>×</button>
+      <div class="drop" id="finder-drop" role="listbox" hidden></div></div>
+    <div id="hood-chip"></div></div>
   <div class="homes-only"><span class="lab">Colour homes by</span><div class="lenses" id="lenses"></div></div>
   <div class="legend" id="legend"></div>
   <div class="homes-only"><span class="lab">Show</span><div class="chips" id="types"></div></div>
@@ -335,7 +358,8 @@ function topPublicAlternative(h) {
 }
 const inScope = h => h.p <= S.house.maxPrice && S.house.types.includes(h.t) && (!S.house.cities.length || S.house.cities.includes(h.c)) && !(S.house.hideRestricted && h.rs);
 function status(h) { const me = voteOf(myId(), h.k)?.v, p = partnerId(), th = p ? voteOf(p, h.k)?.v : null; if (me === "love" && th === "love") return "both"; if (me === "love") return "mine"; if (me === "pass") return "pass"; if (me === "maybe") return "maybe"; return "new"; }
-const visible = h => inScope(h) && (S.showPassed || status(h) !== "pass");
+const inHood = h => !S.hood || (h.c === S.hood.c && (!S.hood.n || h.n === S.hood.n));
+const visible = h => inScope(h) && inHood(h) && (S.showPassed || status(h) !== "pass");
 async function names() { const ids = [S.me, partnerId()].filter(Boolean); if (userCap && ids.length) { try { S.profiles = await userCap.profiles(ids); } catch {} } }
 const nameOf = id => id === myId() ? (S.meName || "You") : ((S.profiles[id] && S.profiles[id].name) || "Your partner");
 const first = id => nameOf(id).split(" ")[0];
@@ -474,7 +498,7 @@ function placeSchools(k = schoolK) { schoolK = k;  // k grows with camera distan
   const m = new THREE.Matrix4(), c = new THREE.Color(), qq = new THREE.Quaternion(), p3 = new THREE.Vector3(), s3 = new THREE.Vector3();
   for (const [mesh, idx] of [[schools, PUB_IDX], [schoolsInd, IND_IDX]]) {
     idx.forEach((si, i) => { const s = DATA.schools[si], kk = k * (focusSchools.has(si) ? 1.6 : 1); m.compose(p3.set(s.x, ground(s.x, s.z) + 55 * kk, s.z), qq, s3.set(kk, kk, kk)); mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.set(ratingCol(sRating(s)))); });
-    mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.instanceMatrix.needsUpdate = true; mesh.boundingSphere = null; mesh.boundingBox = null; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }
 }
 placeSchools();
@@ -529,7 +553,8 @@ function refreshBeacons() {
     rings.setMatrixAt(i, st === "mine" || st === "both" ? m4.compose(pv.set(h.x, top, h.z), q, sc.set(big, big, big)) : hidden);
     badges.setMatrixAt(i, st === "both" ? m4.compose(pv.set(h.x, top + 34 * big, h.z), q, sc.set(big, big, big)) : hidden);
   });
-  for (const m of [stems, caps, rings, badges]) m.instanceMatrix.needsUpdate = true; if (caps.instanceColor) caps.instanceColor.needsUpdate = true;
+  // Instanced meshes cache their bounds for picking; reset them so clicks match where beacons are now.
+  for (const m of [stems, caps, rings, badges]) { m.instanceMatrix.needsUpdate = true; m.boundingSphere = null; m.boundingBox = null; } if (caps.instanceColor) caps.instanceColor.needsUpdate = true;
 }
 
 /* ---------- School links: arcs from the open home to the schools its family could use ---------- */
@@ -651,7 +676,7 @@ function homeCard(h) {
   else if (!theirs) partner = `<div class="partner-box"><div class="who">${faceHTML(p)} ${esc(first(p))} hasn't seen this one yet</div></div>`;
   else partner = `<div class="partner-box ${st === "both" ? "both" : ""}"><div class="who">${faceHTML(p)} ${esc(first(p))}: <span class="vote-dot ${theirs.v}">${{ love: "Turned the key", maybe: "Maybe", pass: "Not for us" }[theirs.v]}</span></div><span class="small pnote"></span>${st === "both" ? `<b style="color:var(--pine)">Both keys turned. It's in Our picks.</b>` : ""}</div>`;
   const plan = st === "both" ? planBlock(h) : "";
-  return `<div class="home-head"><div style="display:grid;gap:6px"><div class="row" style="gap:5px">${h.hr ? `<span class="pill good">Hermes #${h.hr}</span>` : ""}${h.cu ? `<span class="pill good">Price cut ${pct(h.cp, 1)}</span>` : ""}${h.band === "comparison" ? `<span class="pill warn">Above $1.2M</span>` : ""}${h.card ? `<span class="pill">Card facts only</span>` : ""}</div>
+  return `${S.hood && !S.backHome ? `<button class="btn" id="back-hood" style="justify-self:start">← Back to ${esc(S.hood.n || S.hood.c)}</button>` : ""}<div class="home-head"><div style="display:grid;gap:6px"><div class="row" style="gap:5px">${h.hr ? `<span class="pill good">Hermes #${h.hr}</span>` : ""}${h.cu ? `<span class="pill good">Price cut ${pct(h.cp, 1)}</span>` : ""}${h.band === "comparison" ? `<span class="pill warn">Above $1.2M</span>` : ""}${h.card ? `<span class="pill">Card facts only</span>` : ""}</div>
       <h2>${esc(h.a)}</h2><span class="small muted">${esc(h.n)}, ${esc(h.c)} · ${typeName(h.t)}</span></div><button class="xbtn" id="card-x" aria-label="Close">×</button></div>
     <div><div class="price-line"><span class="ask num">${fmtK(h.p)}</span><span class="mo">≈ ${fmt$(m.total)}/mo${m.partial ? "+" : ""}</span></div>
       <div class="small">${h.g <= -10 ? `<span class="verdict good">${Math.abs(Math.round(h.g))}% below similar homes</span>` : h.g >= 8 ? `<span class="verdict bad">${Math.round(h.g)}% above similar homes</span>` : `<span class="verdict">In line with similar homes</span>`} <span class="muted">· ${fmt$(m.cash)} down</span></div></div>
@@ -744,7 +769,7 @@ function aboutCard() {
 }
 function renderCard() {
   const el = $("#card-in");
-  el.innerHTML = S.selSchool ? schoolCard(S.selSchool) : S.sel ? homeCard(S.sel) : PUBLIC ? aboutCard() : introCard();
+  el.innerHTML = S.selSchool ? schoolCard(S.selSchool) : S.sel ? homeCard(S.sel) : S.hood ? hoodCard() : PUBLIC ? aboutCard() : introCard();
   const pn = el.querySelector(".pnote"), p = partnerId(); if (pn && S.sel) { const t = voteOf(p, S.sel.k); pn.textContent = t?.note ? "“" + t.note + "”" : ""; }
 }
 function select(h, fly = true) {
@@ -849,6 +874,93 @@ function renderReport() {
     <div class="row"><a class="btn primary" href="${DASHBOARD}" target="_blank" rel="noopener">Full analysis dashboard</a></div></article>`;
 }
 
+/* ---------- Find a neighbourhood ---------- */
+const HOODS = (() => { const m = new Map();
+  for (const h of H) { const k = h.c + "|" + h.n; if (!m.has(k)) m.set(k, { c: h.c, n: h.n, homes: [] }); m.get(k).homes.push(h); }
+  const cities = new Map(); for (const h of H) { if (!cities.has(h.c)) cities.set(h.c, { c: h.c, n: null, homes: [] }); cities.get(h.c).homes.push(h); }
+  return [...[...m.values()].filter(x => x.n && x.n !== x.c), ...cities.values()];
+})();
+const norm = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+let finderOpts = [], finderIdx = -1;
+function finderSearch(q) {
+  const nq = norm(q); if (!nq) return [];
+  const hoods = HOODS.filter(x => norm(x.n || x.c).includes(nq) || (x.n && norm(x.c).startsWith(nq) && nq.length > 3)).map(x => ({ kind: x.n ? "Neighbourhood" : "City", x, score: norm(x.n || x.c).startsWith(nq) ? 0 : 1 }));
+  const homes = nq.length >= 2 ? H.filter(h => norm(h.a).includes(nq)).slice(0, 6).map(h => ({ kind: "Home", h, score: 2 })) : [];
+  return [...hoods.sort((a, b) => a.score - b.score || b.x.homes.length - a.x.homes.length).slice(0, 8), ...homes];
+}
+function renderFinder() {
+  const q = $("#finder-in").value; finderOpts = finderSearch(q); const drop = $("#finder-drop");
+  $("#finder-x").hidden = !q && !S.hood;
+  if (!finderOpts.length) { drop.hidden = !q; drop.innerHTML = q ? `<div class="small muted" style="padding:8px">No neighbourhood or address matches “${esc(q)}”.</div>` : ""; $("#finder-in").setAttribute("aria-expanded", !!q); return; }
+  drop.hidden = false; $("#finder-in").setAttribute("aria-expanded", "true");
+  drop.innerHTML = finderOpts.map((o, i) => o.kind === "Home"
+    ? `<button class="opt" role="option" data-fi="${i}" aria-selected="${i === finderIdx}"><span>${esc(o.h.a)}<br><small>${esc(o.h.n)}, ${esc(o.h.c)} · ${fmtK(o.h.p)}</small></span><span class="kind">Home</span></button>`
+    : `<button class="opt" role="option" data-fi="${i}" aria-selected="${i === finderIdx}"><span>${esc(o.x.n || o.x.c)}${o.x.n ? `<br><small>${esc(o.x.c)}</small>` : ""}</span><span class="kind">${o.x.homes.length} homes</span></button>`).join("");
+}
+function pickFinder(i) {
+  const o = finderOpts[i]; if (!o) return;
+  $("#finder-drop").hidden = true; $("#finder-in").setAttribute("aria-expanded", "false");
+  if (o.kind === "Home") { $("#finder-in").value = ""; setMode("explore"); return select(o.h); }
+  setHood({ c: o.x.c, n: o.x.n });
+}
+/* The brass outline: the area the neighbourhood's listings cover (convex hull, padded). */
+const hoodGroup = new THREE.Group(); scene.add(hoodGroup);
+function hull(pts) {
+  const p = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]); if (p.length < 3) return p;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = []; for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of p.reverse()) { while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+function drawHood(homes) {
+  for (const c of [...hoodGroup.children]) { hoodGroup.remove(c); c.geometry?.dispose(); }
+  if (!homes.length) return;
+  const cx = homes.reduce((a, h) => a + h.x, 0) / homes.length, cz = homes.reduce((a, h) => a + h.z, 0) / homes.length;
+  let ring = hull(homes.map(h => [h.x, h.z]));
+  if (ring.length < 3) { const r = 260; ring = Array.from({ length: 24 }, (_, i) => [cx + r * Math.cos(i / 24 * 2 * Math.PI), cz + r * Math.sin(i / 24 * 2 * Math.PI)]); }
+  ring = ring.map(([x, z]) => { const dx = x - cx, dz = z - cz, L = Math.hypot(dx, dz) || 1; return [x + dx / L * 180, z + dz / L * 180]; });
+  const pts = []; for (let i = 0; i < ring.length; i++) { const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length], n = Math.max(2, Math.round(Math.hypot(bx - ax, bz - az) / 60));
+    for (let k = 0; k < n; k++) { const x = ax + (bx - ax) * k / n, z = az + (bz - az) * k / n; pts.push(new THREE.Vector3(x, ground(x, z) + 6, z)); } }
+  const curve = new THREE.CatmullRomCurve3(pts, true);
+  hoodGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, pts.length * 2, 7, 6, true), new THREE.MeshBasicMaterial({ color: "#c9973d" })));
+  const lab = label((S.hood.n || S.hood.c).toUpperCase(), .75, "#6b4a10"); lab.position.set(cx, ground(cx, cz) + 320, cz); hoodGroup.add(lab);
+  return { cx, cz, r: Math.max(...ring.map(([x, z]) => Math.hypot(x - cx, z - cz))) };
+}
+function setHood(hood) {
+  S.hood = hood; S.sel = null; S.selSchool = null; S.backHome = null; setHighlight(null); setSchoolLinks(null);
+  $("#finder-in").value = hood ? (hood.n || hood.c) : "";
+  const homes = hood ? H.filter(h => h.c === hood.c && (!hood.n || h.n === hood.n)) : [];
+  const g = hood ? drawHood(homes) : (drawHood([]), null);
+  $("#hood-chip").innerHTML = hood ? `<div class="hood-chip"><span>Showing ${esc(hood.n || hood.c)} only</span><button id="hood-clear">Show all</button></div>` : "";
+  if (g) flyTo(g.cx, g.cz, Math.min(9000, Math.max(1400, g.r * 2.6)), .9);
+  if (innerWidth <= 820 && hood) { $("#card").hidden = false; $("#rail").hidden = true; }
+  renderAll(); renderCard(); renderFinder(); $("#finder-drop").hidden = true; $("#finder-in").setAttribute("aria-expanded", "false"); frameView();
+}
+function hoodCard() {
+  const hood = S.hood, all = H.filter(h => h.c === hood.c && (!hood.n || h.n === hood.n)), inR = all.filter(visible);
+  const med = a => { const b = a.filter(v => v != null && !isNaN(v)).sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : null; };
+  const count = (arr, f) => { const m = new Map(); for (const h of arr) { const k = f(h); if (k != null) m.set(k, (m.get(k) || 0) + 1); } return [...m.entries()].sort((a, b) => b[1] - a[1]); };
+  const elemTop = count(all, h => (h.sa?.likely || []).find(e => e[2] === "elem")?.[0]).slice(0, 3), secTop = count(all, h => (h.sa?.likely || []).find(e => e[2] === "sec")?.[0]).slice(0, 2);
+  const types = count(all, h => typeName(h.t)).map(([t, n]) => `${n} ${t.toLowerCase()}${n === 1 ? "" : "s"}`).join(", ");
+  const schoolRowH = (si, n) => { const sc = DATA.schools[si], r = sRating(sc); return `<button class="srow" data-school="${si}"><span class="srate" style="background:${ratingCol(r)}">${r != null ? r.toFixed(1) : "n/a"}</span><span><b>${esc(sc.name)}</b><span class="sub">${LEVEL_NAME[sc.level] || ""} · likely catchment for ${n} of these homes${sc.grad != null ? ` · ${Math.round(sc.grad)}% graduate` : ""}</span></span><span></span></button>`; };
+  const ranked = [...inR].sort((a, b) => score(b) - score(a));
+  const outside = all.length - inR.length;
+  return `<div class="intro"><div class="home-head"><div><div class="eyebrow">${hood.n ? "Neighbourhood · " + esc(hood.c) : "City"}</div><h2>${esc(hood.n || hood.c)}</h2></div><button class="xbtn" id="hood-x" aria-label="Close">×</button></div>
+    <p class="small muted">${all.length} home${all.length === 1 ? "" : "s"} for sale in our data (${types}).${outside ? ` ${outside} ${outside === 1 ? "is" : "are"} hidden by your current filters (price, type or passed).` : ""}</p>
+    <div class="hstats">
+      <div><b class="num">${fmtK(med(all.map(h => h.p)))}</b><span>median asking price</span></div>
+      <div><b class="num">${fmt$(med(all.map(h => h.p / h.sq)))}</b><span>median per sqft</span></div>
+      <div><b class="num">${fmt$(med(all.map(h => monthly(h).total)))}</b><span>median monthly cost</span></div>
+      <div><b class="num">${Math.round(med(all.map(h => h.w)) ?? 0)}</b><span>median walk score</span></div>
+      <div><b class="num">${pct(med(all.map(h => h.lp)) ?? 0)}</b><span>location premium vs similar homes elsewhere</span></div>
+      <div><b class="num">${all.filter(h => h.cu > 0).length}</b><span>with a price cut</span></div>
+    </div>
+    ${elemTop.length ? `<div><div class="sgroup">Schools most homes here would use</div><div class="slist">${elemTop.map(([si, n]) => schoolRowH(si, n)).join("")}${secTop.map(([si, n]) => schoolRowH(si, n)).join("")}</div></div>` : ""}
+    <div><div class="sgroup">${inR.length ? `Homes here, best fit first` : "No homes match your filters here"}</div>
+      <div class="hlist">${ranked.map(h => `<button class="hrow" data-open-hood="${esc(h.k)}"><span class="badge" style="background:${LENSES[S.lens].col(h)}">${score(h)}</span><span><b>${esc(h.a)}</b><span class="sub">${typeName(h.t)} · ${h.sq.toLocaleString()} sqft · ${fmt$(monthly(h).total)}/mo${h.g <= -10 ? ` · <span style="color:var(--pine)">${Math.abs(Math.round(h.g))}% below similar</span>` : ""}</span></span><span class="num small">${fmtK(h.p)}</span></button>`).join("")}</div></div>
+  </div>`;
+}
+
 /* ---------- Modes ---------- */
 function setMode(mode) {
   S.mode = mode;
@@ -873,12 +985,22 @@ let toastT; function toast(m) { const t = $("#toast"); t.textContent = m; t.hidd
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
 function pick(ev) {
   const r = renderer.domElement.getBoundingClientRect(); mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObjects([caps, stems, badges, rings, schools, schoolsInd, sky], false)[0]; if (!hit) return null;
-  if ([caps, stems, badges, rings].includes(hit.object)) { const h = H[hit.instanceId]; return visible(h) || S.sel === h ? { kind: "home", h, i: hit.instanceId } : null; }
-  if (hit.object === schools) return { kind: "school", s: DATA.schools[PUB_IDX[hit.instanceId]] };
-  if (hit.object === schoolsInd) return { kind: "school", s: DATA.schools[IND_IDX[hit.instanceId]] };
-  if (hit.object.userData.station) return { kind: "station", name: hit.object.userData.station };
-  return null;
+  const hit = ray.intersectObjects([caps, stems, badges, rings, schools, schoolsInd, sky], false)[0];
+  if (hit && [caps, stems, badges, rings].includes(hit.object)) { const h = H[hit.instanceId]; if (visible(h) || S.sel === h) return { kind: "home", h, i: hit.instanceId }; }
+  else if (hit?.object === schools) return { kind: "school", s: DATA.schools[PUB_IDX[hit.instanceId]] };
+  else if (hit?.object === schoolsInd) return { kind: "school", s: DATA.schools[IND_IDX[hit.instanceId]] };
+  else if (hit?.object.userData.station) return { kind: "station", name: hit.object.userData.station };
+  return nearBeacon(ev.clientX - r.left, ev.clientY - r.top, r, ev.pointerType === "touch" ? 26 : 14);
+}
+// Far beacons are only a few pixels wide: a near miss on screen still counts as a pick.
+function nearBeacon(px, py, r, radius) {
+  const v = new THREE.Vector3(); let best = null, bd = radius;
+  H.forEach((h, i) => {
+    if (!visible(h) && S.sel !== h) return;
+    v.set(h.x, capY(h), h.z).project(camera); if (v.z > 1) return;
+    const d = Math.hypot((v.x + 1) / 2 * r.width - px, (1 - v.y) / 2 * r.height - py); if (d < bd) { bd = d; best = { kind: "home", h, i }; }
+  });
+  return best;
 }
 let down = null;
 renderer.domElement.addEventListener("pointerdown", e => { down = [e.clientX, e.clientY]; });
@@ -895,6 +1017,12 @@ renderer.domElement.addEventListener("pointerleave", () => { $("#tip").hidden = 
 document.addEventListener("click", e => {
   const mb = e.target.closest("#modes button"); if (mb) return setMode(mb.dataset.mode);
   const mg = e.target.closest("[data-mode-go]"); if (mg) return setMode(mg.dataset.modeGo);
+  const fo = e.target.closest("[data-fi]"); if (fo) return pickFinder(+fo.dataset.fi);
+  if (e.target.closest("#finder-x")) { $("#finder-in").value = ""; $("#finder-drop").hidden = true; if (S.hood) setHood(null); else renderFinder(); return; }
+  if (e.target.closest("#hood-clear") || e.target.closest("#hood-x")) return setHood(null);
+  const oh = e.target.closest("[data-open-hood]"); if (oh) { select(byKey[oh.dataset.openHood]); $("#card").scrollTop = 0; return; }
+  if (e.target.closest("#back-hood")) { S.sel = null; setHighlight(null); setSchoolLinks(null); refreshBeacons(); renderCard(); const g = drawHood(H.filter(h => h.c === S.hood.c && (!S.hood.n || h.n === S.hood.n))); if (g) flyTo(g.cx, g.cz, Math.min(9000, Math.max(1400, g.r * 2.6)), .9); frameView(); return; }
+  if (!e.target.closest(".finder")) { $("#finder-drop").hidden = true; }
   const sr = e.target.closest("[data-school]"); if (sr) { const s = DATA.schools[+sr.dataset.school]; S.backHome = S.sel; S.selSchool = s; renderCard(); $("#card").scrollTop = 0; flyTo(s.x, s.z, 900, .98); return; }
   if (e.target.closest("#back-home")) { const h = S.backHome; S.selSchool = null; S.backHome = null; renderCard(); if (h) flyTo(h.x, h.z, 1300, .98); return; }
   const o = e.target.closest("[data-open]"); if (o) { setMode("explore"); return select(byKey[o.dataset.open]); }
@@ -903,7 +1031,7 @@ document.addEventListener("click", e => {
   const t = e.target.closest("[data-type]"); if (t) { const ty = t.dataset.type; S.house.types = S.house.types.includes(ty) ? S.house.types.filter(x => x !== ty) : [...S.house.types, ty]; if (!S.house.types.length) S.house.types = [ty]; saveHouse(); return renderAll(); }
   const c = e.target.closest("[data-hcity]"); if (c) { const ci = c.dataset.hcity; S.house.cities = S.house.cities.includes(ci) ? S.house.cities.filter(x => x !== ci) : [...S.house.cities, ci]; saveHouse(); renderPrio(); return renderAll(); }
   const lb = e.target.closest("[data-light]"); if (lb) return applyLight(lb.dataset.light);
-  if (e.target.closest("#card-x")) { S.sel = null; S.selSchool = null; S.backHome = null; setHighlight(null); setSchoolLinks(null); refreshBeacons(); renderCard(); if (innerWidth <= 820) $("#card").hidden = true; frameView(); return; }
+  if (e.target.closest("#card-x")) { if (S.sel && S.hood) { S.sel = null; S.selSchool = null; S.backHome = null; setHighlight(null); setSchoolLinks(null); refreshBeacons(); renderCard(); frameView(); return; } S.sel = null; S.selSchool = null; S.backHome = null; setHighlight(null); setSchoolLinks(null); refreshBeacons(); renderCard(); if (innerWidth <= 820) $("#card").hidden = true; frameView(); return; }
   if (e.target.closest("#sheet-x")) return setMode("explore");
   if (e.target.closest("#orbit")) { orbiting = !orbiting; e.target.closest("#orbit").textContent = orbiting ? "Stop orbit" : "Orbit"; return; }
   if (e.target.closest("#compass")) { flyTo(controls.target.x, controls.target.z, camera.position.distanceTo(controls.target) * .9, .95, 0, 900); return; }
@@ -929,6 +1057,15 @@ document.addEventListener("input", e => {
   if (e.target.hasAttribute("data-date")) savePlan(k, { date: e.target.value });
   if (e.target.hasAttribute("data-notes")) { clearTimeout(plan._t); const val = e.target.value; plan._t = setTimeout(() => savePlan(k, { notes: val }), 700); }
 });
+$("#finder-in").addEventListener("input", () => { finderIdx = -1; renderFinder(); });
+$("#finder-in").addEventListener("focus", () => { if ($("#finder-in").value) renderFinder(); });
+$("#finder-in").addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { e.preventDefault(); finderIdx = Math.min(finderOpts.length - 1, finderIdx + 1); renderFinder(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); finderIdx = Math.max(0, finderIdx - 1); renderFinder(); }
+  else if (e.key === "Enter") { e.preventDefault(); pickFinder(finderIdx >= 0 ? finderIdx : 0); }
+  else if (e.key === "Escape") { $("#finder-drop").hidden = true; }
+  e.stopPropagation();
+});
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { if (!$("#sheet").hidden) return setMode("explore"); if (S.sel) { S.sel = null; setHighlight(null); refreshBeacons(); renderCard(); } return; }
   if (!S.sel || e.target.closest("textarea, input, select")) return;
@@ -940,8 +1077,8 @@ function frameView() {
   const w = innerWidth, h = innerHeight, box = sel => { const e = $(sel); return e && !e.hidden ? e.getBoundingClientRect() : null; };
   const bar = box("#bar"), rail = box("#rail"), card = box("#card");
   let left = 0, right = w, top = bar ? bar.bottom : 0, bottom = h;
-  if (w > 820) { if (rail) left = rail.right; if (card && (S.sel || S.selSchool)) right = card.left; }
-  else { const panel = (card && (S.sel || S.selSchool || S.mode === "tour")) ? card : rail; if (panel) bottom = panel.top; }
+  if (w > 820) { if (rail) left = rail.right; if (card && (S.sel || S.selSchool || S.hood)) right = card.left; }
+  else { const panel = (card && (S.sel || S.selSchool || S.hood || S.mode === "tour")) ? card : rail; if (panel) bottom = panel.top; }
   const cx = (left + right) / 2, cy = top + (bottom - top) * .62, dx = Math.round(w / 2 - cx), dy = Math.round(h / 2 - cy);
   if (dx || dy) camera.setViewOffset(w, h, dx, dy, w, h); else camera.clearViewOffset();
   camera.aspect = w / h; camera.updateProjectionMatrix();
@@ -971,7 +1108,7 @@ renderer.setAnimationLoop(now => {
 /* ---------- Start ---------- */
 applyLight("day"); renderAll(); renderCard(); setMode("explore");
 { const [x, z] = toXZ(49.25, -122.96); controls.target.set(x, ground(x, z), z); camera.position.set(x - 6000, 15500, z + 17500); }
-window.__twin = { THREE, camera, controls, renderer, S, H, caps, stems, city, schools, schoolsInd, schoolGroup, linkGroup, sky, labels, terrain, ground, select, setMode, castVote, toScreen(x, y, z) { const v = new THREE.Vector3(x, y, z).project(camera); const r = renderer.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height, v.z]; }, capY };
+window.__twin = { setHood, HOODS, THREE, camera, controls, renderer, S, H, caps, stems, city, schools, schoolsInd, schoolGroup, linkGroup, sky, labels, terrain, ground, select, setMode, castVote, toScreen(x, y, z) { const v = new THREE.Vector3(x, y, z).project(camera); const r = renderer.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height, v.z]; }, capY };
 progress(1); $("#loading").hidden = true;
 
 (async function bootShared() {
